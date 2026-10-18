@@ -41,3 +41,7 @@ Playlist creation/edit/order, search matching and sorting contracts, queue inser
 Only one real music track was present during this pass. Multi-track behavior needs controlled fixtures. No APK code was decompiled, no purchase flow was activated, and no original music file was edited or deleted. The emulator repeatedly showed system ANRs; one adb reboot recovered interaction, but intermittent hierarchy-capture failures persisted.
 
 No claim of complete functional equivalence is justified by this pass. Next work must maintain an acceptance matrix linking each implemented feature to an original-app observation and a clone test.
+
+## Clone implementation follow-up
+
+Implemented the observed feature families in the separate `P:\MusicPlayer` project. Executed 16 JVM and 12 API37 instrumentation tests with zero failures/skips; lint has zero errors and 37 warnings. See VERIFICATION.md and PARITY.md for actual coverage and remaining reference gaps. REA clone screenshot Evidence: library `ev_0c53...` is NOT used (startup splash); use the canonical JSON in `evidence/clone-library.json`, `clone-player.json`, `clone-queue.json` for their exact Evidence IDs and digests. Generated fixtures now provide a multi-track library; original runtime contracts remain unresolved where no comparison was completed.
