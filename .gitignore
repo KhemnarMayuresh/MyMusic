@@ -1,0 +1,10 @@
+.gradle/
+.kotlin/
+.superpowers/
+**/build/
+local.properties
+analysis/evidence/
+analysis/fixtures/
+*.apk
+*.log
+.tools/
