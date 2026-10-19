@@ -1,6 +1,6 @@
 package app.local.musicplayer.ui
 
-data class PlayerTheme(val name:String,val style:Int,val top:Long,val bottom:Long,val accent:Long)
+data class PlayerTheme(val name:String,val style:Int,val top:Long,val bottom:Long,val accent:Long) { val layout:PlayerLayout get()=when(style) {0,9->PlayerLayout.INLINE_ACTIONS;3->PlayerLayout.RING;6->PlayerLayout.LIGHT_PANEL;7->PlayerLayout.HEADER_PROGRESS;8,10->PlayerLayout.IMMERSIVE;else->PlayerLayout.STANDARD} }
 object PlayerThemes {
  val all=listOf(
   PlayerTheme("Artwork",0,0xFF090B22,0xFF35134D,0xFFFFBF00),

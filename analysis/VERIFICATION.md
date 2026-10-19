@@ -1,3 +1,9 @@
+# Current APK — supplied icon and themed seeking
+
+2026-10-19: 22 JVM and 20 API37 emulator tests passed (no skips/failures/errors). Final build/lint passed: zero errors, 68 warnings. The supplied PNG is the launcher icon. Theme preview and live player now share six layout arrangements and functional linear/circular seek controls. Lyrics timer status was preserved. See [theme progress verification](THEME-PROGRESS-2026-10-19.md).
+
+Current `MusicPlayer.apk` SHA-256: `F407E8068E3BFB7EF7FA97DA8647D5D1E7BB97CA439E7F514E2AF9EC994C8086`. Installed in the emulator. Sections below are historical verification snapshots.
+
 # Latest update — 2026-10-19
 
 UI corrections are documented in [revision notes](REVISIONS-2026-10-19.md). Current APK: `P:\MusicPlayer\MusicPlayer.apk`; SHA-256 `770995471099EEEDB541A9A63464A1CA0CFC7C763BCCA08802D8EE3F92C2D27E`.

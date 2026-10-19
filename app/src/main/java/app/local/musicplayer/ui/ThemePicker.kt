@@ -14,6 +14,9 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.dp
+import app.local.musicplayer.playback.PlaybackSnapshot
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import app.local.musicplayer.PlayerViewModel
 import app.local.musicplayer.collections.CollectionState
 import kotlin.math.*
@@ -43,6 +46,12 @@ import kotlin.math.*
  var selected by rememberSaveable {mutableStateOf(data.pref("player_theme","Artwork"))}
  val theme=PlayerThemes.find(selected)
  val state by vm.playback.collectAsState()
+ var demoPosition by rememberSaveable {mutableLongStateOf(76000)}
+ var demoPlaying by rememberSaveable {mutableStateOf(false)}
+ LaunchedEffect(demoPlaying,state.current) {while(demoPlaying && state.current==null && isActive) {delay(400);demoPosition=(demoPosition+400)%234000}}
+ val preview=if(state.current==null) PlaybackSnapshot(duration=234000,position=demoPosition,playing=demoPlaying) else state
+ val controller=vm.connection.controller
+ val actions=PlayerActions(seek={value->if(state.current==null) demoPosition=value else if(controller?.currentMediaItem?.mediaId==state.current?.mediaId) controller?.seekTo(value)},toggle={if(state.current==null) demoPlaying=!demoPlaying else controller?.let {if(it.isPlaying) it.pause() else it.play()}},previous={controller?.seekToPrevious()},next={controller?.seekToNextMediaItem()},back={if(state.current==null) demoPosition=(demoPosition-10000).coerceAtLeast(0) else controller?.seekBack()},forward={if(state.current==null) demoPosition=(demoPosition+10000).coerceAtMost(234000) else controller?.seekForward()},shuffle={controller?.shuffleModeEnabled=!state.shuffle},repeat={controller?.repeatMode=when(state.repeat) {0->2;2->1;else->0}})
  Column(Modifier.fillMaxSize()) {
   Header("Themes",onBack)
   Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.Center) {TextButton(onClick={player=false}) {Text("Library",color=if(!player) Color.White else Muted)};TextButton(onClick={player=true}) {Text("Player",color=if(player) Color.White else Muted)}}
@@ -50,11 +59,14 @@ import kotlin.math.*
   else {
    Text(theme.name,Modifier.align(Alignment.CenterHorizontally).padding(8.dp),style=MaterialTheme.typography.titleLarge)
    Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal=52.dp,vertical=8.dp),contentAlignment=Alignment.Center) {
-    Column(Modifier.widthIn(max=300.dp).fillMaxHeight().aspectRatio(.58f,false).clip(RoundedCornerShape(24.dp)).background(Brush.verticalGradient(listOf(Color(theme.top),Color(theme.bottom)))).border(1.dp,Color.White.copy(alpha=.25f),RoundedCornerShape(24.dp)).padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {Icon(Icons.Rounded.KeyboardArrowDown,null,Modifier.size(18.dp));Text("Song  |  Lyrics",style=MaterialTheme.typography.labelSmall);Icon(Icons.Rounded.MoreVert,null,Modifier.size(18.dp))}
-     Spacer(Modifier.weight(.2f));PlayerThemeArtwork(theme,state.current?.mediaMetadata?.artworkUri?.toString(),Modifier.fillMaxWidth().aspectRatio(1f));Spacer(Modifier.height(16.dp))
-     Text(state.current?.mediaMetadata?.title?.toString() ?: "Your favorite song",maxLines=1,style=MaterialTheme.typography.titleMedium);Text(state.current?.mediaMetadata?.artist?.toString() ?: "Music, your way",color=Muted,style=MaterialTheme.typography.labelSmall)
-     Spacer(Modifier.weight(.2f));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceAround) {Icon(Icons.Rounded.FavoriteBorder,null,Modifier.size(18.dp));Icon(Icons.Rounded.Tune,null,Modifier.size(18.dp));Icon(Icons.Rounded.QueueMusic,null,Modifier.size(18.dp))};Spacer(Modifier.height(14.dp));LinearProgressIndicator(progress={.38f},Modifier.fillMaxWidth(),color=Color(theme.accent));Spacer(Modifier.height(12.dp));Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(24.dp)) {Icon(Icons.Rounded.SkipPrevious,null);Icon(Icons.Rounded.PlayCircle,null,Modifier.size(44.dp),tint=Color(theme.accent));Icon(Icons.Rounded.SkipNext,null)}
+    BoxWithConstraints(Modifier.fillMaxHeight().aspectRatio(.5625f,false).clip(RoundedCornerShape(24.dp)).background(Brush.verticalGradient(listOf(Color(theme.top),Color(theme.bottom)))).border(1.dp,Color.White.copy(alpha=.25f),RoundedCornerShape(24.dp)),contentAlignment=Alignment.Center) {
+     val scale=minOf(maxWidth/360.dp,maxHeight/640.dp)
+     MaterialTheme(colorScheme=MaterialTheme.colorScheme.copy(primary=Color(theme.accent))) {
+      Column(Modifier.requiredSize(360.dp,640.dp).graphicsLayer {scaleX=scale;scaleY=scale}.padding(12.dp)) {
+       Row(Modifier.fillMaxWidth().height(48.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {Icon(Icons.Rounded.KeyboardArrowDown,null);Text("Song  |  Lyrics");Icon(Icons.Rounded.MoreVert,null)}
+       ThemedPlayerBody(theme,preview,state.current?.mediaMetadata?.title?.toString() ?: "Your favorite song",state.current?.mediaMetadata?.artist?.toString() ?: "Music, your way",state.current?.mediaMetadata?.artworkUri?.toString(),false,actions,Modifier.weight(1f))
+      }
+     }
     }
    }
    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal=16.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)) {PlayerThemes.all.forEach {option->FilterChip(selected==option.name,{selected=option.name},label={Text(option.name)})}}
