@@ -27,10 +27,14 @@ class PlayerViewModel(application: Application): AndroidViewModel(application) {
     private val external=MutableStateFlow<List<Track>>(emptyList())
     val allTracks=combine(libraryState,collections,external) { library,data,extra ->
         (((library as? LibraryState.Ready)?.tracks ?: emptyList())+extra).distinctBy { it.id }.map { track ->
-            val custom=data.overrides[track.id.uri]?.let { runCatching { JSONObject(it) }.getOrNull() }
-            if(custom==null) track else track.copy(title=custom.optString("title").takeIf { it.isNotBlank() } ?: track.title,artist=custom.optString("artist").takeIf { it.isNotBlank() } ?: track.artist,album=custom.optString("album").takeIf { it.isNotBlank() } ?: track.album,artworkUri=custom.optString("cover").takeIf { it.isNotBlank() } ?: track.artworkUri)
+            LibraryDetails.parse(data.overrides[track.id.uri])?.apply(track) ?: track
         }
     }.stateIn(viewModelScope,SharingStarted.Eagerly,emptyList())
+    val playingArtwork=combine(playback,collections) {state,data->
+        val item=state.current
+        val source=item?.mediaMetadata?.extras?.getString("source_uri") ?: item?.localConfiguration?.uri?.toString()
+        LibraryDetails.parse(data.overrides[source])?.cover ?: item?.mediaMetadata?.artworkUri?.toString()
+    }.stateIn(viewModelScope,SharingStarted.Eagerly,null)
     val tracks=combine(allTracks,collections) { all,data ->
         val minimum=data.pref("min_duration","0").toLongOrNull()?.coerceIn(0,3600) ?: 0
         val excluded=data.pref("excluded_folders").lines().filter { it.isNotBlank() }
@@ -48,7 +52,7 @@ class PlayerViewModel(application: Application): AndroidViewModel(application) {
     fun work(block: suspend ()->Unit) { viewModelScope.launch { try { block() } catch(e: CancellationException) { throw e } catch(e: Exception) { message.value=e.message ?: "Unable to complete this action" } } }
     fun pref(key: String,value: String) { work { repository.setPreference(key,value) } }
     fun favorite(track: Track) { work { repository.setFavorite(track.id.uri,track.id.uri !in collections.value.favorites) } }
-    fun play(list: List<Track>,start: Int=0,shuffle: Boolean=false) { try { connection.play(list,start,shuffle) } catch(e: Exception) { message.value=e.message } }
+    fun play(list: List<Track>,start: Int=0,shuffle: Boolean?=null) { try { connection.play(list,start,shuffle) } catch(e: Exception) { message.value=e.message } }
     fun enqueue(list: List<Track>,next: Boolean=false) { try { connection.add(list,next); message.value=if(next) "Playing next" else "Added to queue" } catch(e: Exception) { message.value=e.message } }
     fun openExternal(uri: Uri) { work {
         val track=withContext(Dispatchers.IO) {

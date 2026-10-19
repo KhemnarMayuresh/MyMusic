@@ -44,6 +44,7 @@ class PlaybackService: MediaSessionService() {
         queueStore=QueueStore(this)
         timerStore=TimerStore(this)
         player=createPlayer(false)
+        PlayerAudioSignal.active=processors[player]?.signal
         androidx.core.content.ContextCompat.registerReceiver(this,noisyReceiver,android.content.IntentFilter(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY),androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
         val launch=packageManager.getLaunchIntentForPackage(packageName)!!
         val activity=PendingIntent.getActivity(this,0,launch,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -85,6 +86,7 @@ class PlaybackService: MediaSessionService() {
             val old=player
             old.removeListener(playerListener)
             player=next
+            PlayerAudioSignal.active=processors[next]?.signal
             next.addListener(playerListener)
             session?.setPlayer(next)
             disposePlayer(old)
@@ -199,6 +201,7 @@ class PlaybackService: MediaSessionService() {
         return result
     }
     override fun onDestroy() {
+        PlayerAudioSignal.active=null
         cancelGapResume();unregisterReceiver(noisyReceiver)
         queueStore.save(player)
         transition.cancel();scope.cancel();session?.release();session=null;disposePlayer(player)

@@ -40,11 +40,16 @@ class PlaybackConnection(context: Context,private val scope: CoroutineScope) {
         val items=if(rebuild || mutable.value.items.size!=p.mediaItemCount) (0 until p.mediaItemCount).map(p::getMediaItemAt) else mutable.value.items
         mutable.value=PlaybackSnapshot(true,items,p.currentMediaItemIndex.coerceAtLeast(0),p.isPlaying,p.currentPosition.coerceAtLeast(0),p.duration.takeIf { it>0 } ?: 0,p.shuffleModeEnabled,p.repeatMode,p.playbackParameters.speed,p.sessionExtras.getLong("timer_remaining",-1),p.sessionExtras.getBoolean("timer_finish"),p.playerError?.let { "Unable to play this file: ${it.errorCodeName}" },p.sessionExtras.getString("effects_status"))
     }
-    fun play(tracks: List<Track>,start: Int=0,shuffle: Boolean=false) {
+    fun play(tracks: List<Track>,start: Int=0,shuffle: Boolean?=null) {
         if(tracks.isEmpty()) return
         check(controller!=null) {"Playback is still connecting. Try again in a moment."}
         require(tracks.size<=5000) { "A queue can contain up to 5,000 songs" }
-        controller?.apply { setMediaItems(tracks.map(::item),start.coerceIn(tracks.indices),0); shuffleModeEnabled=shuffle; prepare(); play() }
+        controller?.apply {
+            shuffle?.let {shuffleModeEnabled=it}
+            if(shuffle==true) setMediaItems(tracks.map(::item),true)
+            else setMediaItems(tracks.map(::item),start.coerceIn(tracks.indices),0)
+            prepare();play()
+        }
     }
     fun add(tracks: List<Track>,next: Boolean) {
         controller?.let { p ->

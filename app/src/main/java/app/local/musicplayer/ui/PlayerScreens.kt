@@ -40,12 +40,14 @@ import app.local.musicplayer.playback.PlaybackSnapshot
 }
 @Composable fun FullPlayer(vm:PlayerViewModel,state:PlaybackSnapshot,current:Track?,favorite:Boolean,lyricsText:String,onBack:()->Unit,onMenu:()->Unit,onQueue:()->Unit,onEqualizer:()->Unit,onTimer:()->Unit,onPlaylist:()->Unit,onLyricsEdit:()->Unit,onTheme:()->Unit) {
  val settings by vm.collections.collectAsStateWithLifecycle()
+ val artwork by vm.playingArtwork.collectAsStateWithLifecycle()
  var lyrics by remember {mutableStateOf(false)}
  val controller=vm.connection.controller
  val actions=PlayerActions(
   seek={value->if(controller?.currentMediaItem?.mediaId==state.current?.mediaId) controller?.seekTo(value)},
   toggle={controller?.let {if(it.isPlaying) it.pause() else it.play()}},previous={controller?.seekToPrevious()},next={controller?.seekToNextMediaItem()},back={controller?.seekBack()},forward={controller?.seekForward()},
   shuffle={controller?.shuffleModeEnabled=!state.shuffle},repeat={controller?.repeatMode=when(state.repeat) {0->2;2->1;else->0}},favorite={current?.let(vm::favorite)},playlist=onPlaylist,equalizer=onEqualizer,timer=onTimer,queue=onQueue)
+ PlayerSurface(PlayerThemes.find(settings.pref("player_theme","Artwork")),artwork ?: current?.artworkUri,Modifier.fillMaxSize()) {theme->
  Column(Modifier.fillMaxSize().padding(horizontal=12.dp)) {
   Row(Modifier.fillMaxWidth().height(60.dp),verticalAlignment=Alignment.CenterVertically) {
    IconButton(onClick=onBack) {Icon(Icons.Rounded.KeyboardArrowDown,"Collapse player")};Spacer(Modifier.weight(1f))
@@ -60,6 +62,7 @@ import app.local.musicplayer.playback.PlaybackSnapshot
     TextButton(onClick=onLyricsEdit,modifier=Modifier.align(Alignment.CenterHorizontally)) {Text("Edit / import lyrics")}
    }
    PlayerControlsFooter(state,favorite,actions)
-  } else ThemedPlayerBody(PlayerThemes.find(settings.pref("player_theme","Artwork")),state,current?.title ?: state.current?.mediaMetadata?.title?.toString() ?: "Nothing playing",current?.artist ?: state.current?.mediaMetadata?.artist?.toString().orEmpty(),current?.artworkUri ?: state.current?.mediaMetadata?.artworkUri?.toString(),favorite,actions,Modifier.weight(1f))
+  } else ThemedPlayerBody(theme,state,current?.title ?: state.current?.mediaMetadata?.title?.toString() ?: "Nothing playing",current?.artist ?: state.current?.mediaMetadata?.artist?.toString().orEmpty(),artwork ?: current?.artworkUri,favorite,actions,Modifier.weight(1f))
+ }
  }
 }

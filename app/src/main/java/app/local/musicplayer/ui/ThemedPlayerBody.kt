@@ -113,7 +113,7 @@ class PlayerActions(
    } else {
     val artworkSize=minOf(maxWidth-24.dp,maxHeight-8.dp,340.dp).coerceAtLeast(1.dp)
     if(theme.layout==PlayerLayout.RING) ThemeSeek(state,true,Modifier.size(artworkSize),actions.seek) {Artwork(uri,Modifier.fillMaxSize(.82f).clip(CircleShape))}
-    else PlayerThemeArtwork(theme,uri,Modifier.size(artworkSize))
+    else PlayerThemeArtwork(theme,uri,Modifier.size(artworkSize),state.playing,state.current?.mediaId)
    }
   }
   val light=theme.layout==PlayerLayout.LIGHT_PANEL

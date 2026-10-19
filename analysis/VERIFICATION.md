@@ -1,8 +1,14 @@
-# Current APK — supplied icon and themed seeking
+# Current APK — shuffle and animated cover themes
+
+2026-10-19: 28 JVM tests and all 22 API37 emulator tests passed, zero failures/errors/skips. Final suite/build succeeded in 8m02s (instrumentation report: 455.732s). Shuffle survives song selection, explicit Shuffle starts at the first shuffled window, and crossfade preserves its traversal. Shared cover resolution updates the full player and preview, including live cover edits. Blurred cover backgrounds, spinning vinyl/cassette reels and PCM-driven energy waveform are implemented. See [playback visual verification](SHUFFLE-VISUALS-2026-10-19.md) for boundaries and signal timing limitations.
+
+Final lint/build succeeded in 2m46s using a fresh single-use Gradle process: zero errors, 69 warnings. Current `MusicPlayer.apk` SHA-256: `DB52DDCD3D153F5C4D44FB6F61D416050AA7EF518364FE9E5BC59F5EB96FF48B`. Installed in emulator-5554 after test cleanup. The supplied launcher icon is preserved. Sections below are historical snapshots.
+
+# Previous APK — supplied icon and themed seeking
 
 2026-10-19: 22 JVM and 20 API37 emulator tests passed (no skips/failures/errors). Final build/lint passed: zero errors, 68 warnings. The supplied PNG is the launcher icon. Theme preview and live player now share six layout arrangements and functional linear/circular seek controls. Lyrics timer status was preserved. See [theme progress verification](THEME-PROGRESS-2026-10-19.md).
 
-Current `MusicPlayer.apk` SHA-256: `F407E8068E3BFB7EF7FA97DA8647D5D1E7BB97CA439E7F514E2AF9EC994C8086`. Installed in the emulator. Sections below are historical verification snapshots.
+Previous `MusicPlayer.apk` SHA-256: `F407E8068E3BFB7EF7FA97DA8647D5D1E7BB97CA439E7F514E2AF9EC994C8086`. Installed in the emulator. Sections below are historical verification snapshots.
 
 # Latest update — 2026-10-19
 

@@ -4,6 +4,7 @@ package app.local.musicplayer.playback
 import android.os.SystemClock
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
 import kotlinx.coroutines.*
 
 /** Service-owned overlap. Only this class can own a second decoder. All calls use the main looper. */
@@ -28,6 +29,10 @@ class TransitionCoordinator(
         val originalIndex=primary.currentMediaItemIndex
         secondary.volume=0f
         secondary.setMediaItems((0 until primary.mediaItemCount).map(primary::getMediaItemAt),next,0)
+        val order=IntArray(primary.mediaItemCount)
+        var cursor=primary.currentTimeline.getFirstWindowIndex(true)
+        for(i in order.indices) {order[i]=cursor;cursor=primary.currentTimeline.getNextWindowIndex(cursor,Player.REPEAT_MODE_OFF,true)}
+        secondary.setShuffleOrder(DefaultShuffleOrder(order,System.nanoTime()))
         secondary.repeatMode=primary.repeatMode;secondary.shuffleModeEnabled=primary.shuffleModeEnabled;secondary.playbackParameters=primary.playbackParameters
         secondary.prepare()
         job=scope.launch {
