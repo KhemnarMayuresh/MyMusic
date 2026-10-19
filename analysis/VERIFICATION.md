@@ -1,3 +1,9 @@
+# Latest update — 2026-10-19
+
+UI corrections are documented in [revision notes](REVISIONS-2026-10-19.md). Current APK: `P:\MusicPlayer\MusicPlayer.apk`; SHA-256 `770995471099EEEDB541A9A63464A1CA0CFC7C763BCCA08802D8EE3F92C2D27E`.
+
+Executed 19 JVM tests and 18 API37 emulator tests: all passed, zero skipped. Final build/lint passed: zero errors, 66 warnings. Source music preserved. The APK is installed; one Classic widget was pinned and its queue shortcut checked. Device/OEM and reference-equivalence limits below still apply. The following 2026-10-18 section is historical.
+
 # Completion verification — 2026-10-18
 
 Project: `P:\MusicPlayer`, branch `codex/music-player`; package `app.local.musicplayer` 0.1.0.

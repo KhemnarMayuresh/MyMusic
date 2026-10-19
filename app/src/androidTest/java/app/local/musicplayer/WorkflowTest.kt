@@ -136,12 +136,13 @@ class WorkflowTest {
             var playing=false;val deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(10)
             while(!playing && System.nanoTime()<deadline) {Thread.sleep(100);instrumentation.runOnMainSync {playing=controller.isPlaying}}
             assertTrue("Must be playing before timer test",playing)
-            instrumentation.runOnMainSync {controller.sendCustomCommand(SessionCommand("timer.start",Bundle.EMPTY),Bundle().apply {putLong("duration",1000);putBoolean("finish",false)})}
+            var timerStartPosition=0L
+            instrumentation.runOnMainSync {timerStartPosition=controller.currentPosition;controller.sendCustomCommand(SessionCommand("timer.start",Bundle.EMPTY),Bundle().apply {putLong("duration",1000);putBoolean("finish",false)})}
             Thread.sleep(1800)
             var position=0L
             instrumentation.runOnMainSync {playing=controller.isPlaying;position=controller.currentPosition}
             assertFalse("Timer must pause the player",playing)
-            assertTrue("Timer must allow approximately a second of playback",position in 700..3000)
+            assertTrue("Timer must pause after approximately a second of additional playback: start=$timerStartPosition, stop=$position",position-timerStartPosition in 500..3000)
         } finally {instrumentation.runOnMainSync {controller.pause();controller.release()}}
     }
     @Test fun crossfadeStartsNextDecoderBeforeCurrentTrackFinishes() = runBlocking<Unit> {

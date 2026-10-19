@@ -66,7 +66,7 @@ import androidx.media3.common.Player
         } else Column(Modifier.weight(1f).fillMaxWidth(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
             BoxWithConstraints(Modifier.fillMaxWidth(.84f).weight(1f,false),contentAlignment=Alignment.Center) {
                 val size=minOf(maxWidth,maxHeight,340.dp)
-                Artwork(current?.artworkUri ?: state.current?.mediaMetadata?.artworkUri?.toString(),Modifier.size(size).then(if(settings.pref("player_theme")=="Vinyl") Modifier.clip(CircleShape) else Modifier))
+                PlayerThemeArtwork(PlayerThemes.find(settings.pref("player_theme","Artwork")),current?.artworkUri ?: state.current?.mediaMetadata?.artworkUri?.toString(),Modifier.size(size))
             }
             Spacer(Modifier.height(24.dp))
             Text(current?.title ?: state.current?.mediaMetadata?.title?.toString() ?: "Nothing playing",Modifier.padding(horizontal=8.dp),style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold,maxLines=2,overflow=TextOverflow.Ellipsis)
@@ -95,22 +95,5 @@ import androidx.media3.common.Player
             IconButton(onClick={controller?.seekToNextMediaItem()}) {Icon(Icons.Rounded.SkipNext,"Next",Modifier.size(36.dp))}
             IconButton(onClick={controller?.repeatMode=when(state.repeat) {Player.REPEAT_MODE_OFF->Player.REPEAT_MODE_ALL;Player.REPEAT_MODE_ALL->Player.REPEAT_MODE_ONE;else->Player.REPEAT_MODE_OFF}}) {Icon(if(state.repeat==Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,"Repeat",tint=if(state.repeat!=0) MaterialTheme.colorScheme.primary else Muted)}
         }
-    }
-}
-@Composable fun QueueScreen(vm: PlayerViewModel,state: PlaybackSnapshot,onBack: ()->Unit) {
-    Column {
-        Header("Playing queue",onBack) {
-            IconButton(onClick={vm.connection.controller?.shuffleModeEnabled=!state.shuffle}) {Icon(Icons.Rounded.Shuffle,"Shuffle",tint=if(state.shuffle) MaterialTheme.colorScheme.primary else Muted)}
-            IconButton(onClick={vm.connection.controller?.clearMediaItems()}) {Icon(Icons.Rounded.DeleteSweep,"Clear queue")}
-        }
-        Text(if(state.items.isEmpty()) "Queue is empty" else "${state.index+1} / ${state.items.size}",Modifier.padding(20.dp),color=Muted)
-        LazyColumn {itemsIndexed(state.items,key={index,item->"$index:${item.mediaId}"}) { index,item ->
-            Row(Modifier.fillMaxWidth().clickable {vm.connection.controller?.seekToDefaultPosition(index)}.padding(start=12.dp,top=8.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {
-                IconButton(onClick={if(index>0) vm.connection.controller?.moveMediaItem(index,index-1)},enabled=index>0) {Icon(Icons.Rounded.KeyboardArrowUp,"Move song up")}
-                Artwork(item.mediaMetadata.artworkUri?.toString(),Modifier.size(48.dp))
-                Column(Modifier.weight(1f).padding(horizontal=12.dp)) {Text(item.mediaMetadata.title?.toString().orEmpty(),maxLines=1,overflow=TextOverflow.Ellipsis,color=if(index==state.index) MaterialTheme.colorScheme.primary else Color.White);Text(item.mediaMetadata.artist?.toString().orEmpty(),color=Muted,maxLines=1,overflow=TextOverflow.Ellipsis)}
-                IconButton(onClick={vm.connection.controller?.removeMediaItem(index)}) {Icon(Icons.Rounded.Close,"Remove from queue")}
-            }
-        } }
     }
 }

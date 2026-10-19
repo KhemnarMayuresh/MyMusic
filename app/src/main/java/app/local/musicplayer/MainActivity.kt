@@ -19,6 +19,7 @@ class MainActivity: ComponentActivity() {
     }
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); handle(intent) }
     private fun handle(intent: Intent?) {
+        if(intent?.getBooleanExtra("open_queue",false)==true) {model.navigation.value="queue";intent.removeExtra("open_queue")}
         if(intent?.action==Intent.ACTION_VIEW) intent.data?.let { uri ->
             try { contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch(_: SecurityException) { }
             model.openExternal(uri)

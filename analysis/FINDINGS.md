@@ -45,3 +45,7 @@ No claim of complete functional equivalence is justified by this pass. Next work
 ## Clone implementation follow-up
 
 Implemented the observed feature families in the separate `P:\MusicPlayer` project. Executed 16 JVM and 12 API37 instrumentation tests with zero failures/skips; lint has zero errors and 37 warnings. See VERIFICATION.md and PARITY.md for actual coverage and remaining reference gaps. REA clone screenshot Evidence: library `ev_0c53...` is NOT used (startup splash); use the canonical JSON in `evidence/clone-library.json`, `clone-player.json`, `clone-queue.json` for their exact Evidence IDs and digests. Generated fixtures now provide a multi-track library; original runtime contracts remain unresolved where no comparison was completed.
+
+## 2026-10-19 corrections
+
+Fresh reference queue and widget screens are retained under `evidence/revisions/` as REA JSON plus screenshots. `folder-menu.xml` records the five per-folder actions. Reference widgets include Classic/Lite4×1 and Vinyl4×2. The clone now implements equivalent action families, real arbitrary/edge-scrolling drag gestures, a lock-screen preference, twelve local theme designs with visual preview/Apply, and those three widget styles. Original theme artwork/catalog remains unverified. See REVISIONS-2026-10-19.md for the 19-unit/18-device verification and scope.

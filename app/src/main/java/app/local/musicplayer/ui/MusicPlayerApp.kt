@@ -49,6 +49,7 @@ import org.json.JSONObject
     val playback by vm.playback.collectAsStateWithLifecycle()
     val library by vm.libraryState.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
+    val navigation by vm.navigation.collectAsStateWithLifecycle()
     val context=LocalContext.current
     val scope=rememberCoroutineScope()
     val fileOps=remember {FileOperations(context)}
@@ -66,7 +67,8 @@ import org.json.JSONObject
     val current=allTracks.find {it.id.uri==currentUri} ?: playback.current?.let {item-> Track(TrackId(currentUri.orEmpty()),item.mediaMetadata.title?.toString() ?: "Audio file",item.mediaMetadata.artist?.toString() ?: "Unknown artist",item.mediaMetadata.albumTitle?.toString().orEmpty(),null,"",playback.duration,null,0,item.mediaMetadata.artworkUri?.toString())}
     val drawer=rememberDrawerState(DrawerValue.Closed)
     val snackbar=remember {SnackbarHostState()}
-    fun back() {if(route=="library") {groupKind=""} else route=if(route=="queue" && playback.current!=null) "player" else "library"}
+    fun back() {if(route=="library") {groupKind=""} else route=if((route=="queue" || route=="playerThemes") && playback.current!=null) "player" else "library"}
+    LaunchedEffect(navigation) {navigation?.let {route=it;vm.navigation.value=null}}
     fun navigate(destination: String) {route=destination}
     BackHandler(drawer.isOpen || route!="library" || group!=null) {if(drawer.isOpen) scope.launch {drawer.close()} else back()}
     LaunchedEffect(message) {message?.let {snackbar.showSnackbar(it);vm.message.value=null}}
@@ -76,23 +78,29 @@ import org.json.JSONObject
         if(route=="player" && data.flag("keep_screen")) window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) else window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         onDispose {window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)}
     }
+    DisposableEffect(data.flag("lock_screen",true),playback.playing) {
+        val activity=context as? Activity;val enabled=data.flag("lock_screen",true) && playback.playing
+        if(Build.VERSION.SDK_INT>=27) activity?.setShowWhenLocked(enabled) else if(enabled) activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED) else activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+        onDispose {if(Build.VERSION.SDK_INT>=27) activity?.setShowWhenLocked(false) else activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)}
+    }
     val permission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {vm.rescan()}
     val notifications=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     LaunchedEffect(playback.playing) {if(playback.playing && Build.VERSION.SDK_INT>=33 && !data.flag("notification_asked")) {vm.pref("notification_asked","true");notifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)}}
+    lateinit var continueDeletion: (List<Track>)->Unit
     val consent=rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {result->
-        val targets=pendingDelete
-        if(result.resultCode==Activity.RESULT_OK) vm.work {if(retryDelete) fileOps.delete(targets);vm.rescan();vm.message.value="Deleted from device"} else vm.message.value="Deletion cancelled"
-        pendingDelete=emptyList()
+        val targets=pendingDelete;pendingDelete=emptyList()
+        if(result.resultCode==Activity.RESULT_OK) {if(retryDelete) continueDeletion(targets) else {vm.rescan();vm.message.value="Deleted from device"}} else vm.message.value="Deletion cancelled"
     }
     val deletePermission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {granted->
         val targets=pendingDelete;pendingDelete=emptyList()
         if(granted) vm.work {fileOps.delete(targets);vm.rescan()} else vm.message.value="Storage write access is required to delete audio files"
     }
-    fun delete(track: Track) {
-        pendingDelete=listOf(track)
+    fun delete(targets: List<Track>) {
+        pendingDelete=targets
         if(WriteAccess.needsPermission(Build.VERSION.SDK_INT,context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)==android.content.pm.PackageManager.PERMISSION_GRANTED)) deletePermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        else vm.work {val request=fileOps.delete(listOf(track));if(request!=null) {retryDelete=request.retry;consent.launch(IntentSenderRequest.Builder(request.sender).build())} else {pendingDelete=emptyList();vm.rescan()}}
+        else vm.work {val request=fileOps.delete(targets);if(request!=null) {retryDelete=request.retry;consent.launch(IntentSenderRequest.Builder(request.sender).build())} else {pendingDelete=emptyList();vm.rescan()}}
     }
+    continueDeletion=::delete
     val cover=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {uri->
         if(uri!=null) actionTrack?.let {track->vm.work {
             context.contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -113,6 +121,8 @@ import org.json.JSONObject
     }}
     MusicTheme(data.pref("theme","Midnight")) {
         val gradient=when(data.pref("theme")) {"Obsidian"->listOf(Color(0xFF080808),Color(0xFF19191D));"Ocean"->listOf(Color(0xFF061824),Color(0xFF123B45));"Sunset"->listOf(Color(0xFF261125),Color(0xFF472735));else->listOf(Ink,Color(0xFF17103F),Color(0xFF35134D))}
+        val playerTheme=PlayerThemes.find(data.pref("player_theme","Artwork"))
+        val background=if(route=="player") listOf(Color(playerTheme.top),Color(playerTheme.bottom)) else gradient
         ModalNavigationDrawer(drawerState=drawer,drawerContent={ModalDrawerSheet(drawerContainerColor=Ink,modifier=Modifier.width(300.dp)) {
             Column(Modifier.verticalScroll(rememberScrollState()).statusBarsPadding()) {
                 Icon(Icons.Rounded.GraphicEq,null,Modifier.padding(start=24.dp,top=24.dp).size(44.dp),tint=MaterialTheme.colorScheme.primary)
@@ -122,21 +132,21 @@ import org.json.JSONObject
                 }
             }
         }}) {
-            Scaffold(containerColor=Color.Transparent,contentColor=Color.White,snackbarHost={SnackbarHost(snackbar)},modifier=Modifier.background(Brush.verticalGradient(gradient)).statusBarsPadding(),bottomBar={if(route!="player" && playback.current!=null) CompactPlayer(vm,playback,{route="player"},{route="queue"}) else Spacer(Modifier.navigationBarsPadding())}) {padding->
+            Scaffold(containerColor=Color.Transparent,contentColor=Color.White,snackbarHost={SnackbarHost(snackbar)},modifier=Modifier.background(Brush.verticalGradient(background)).statusBarsPadding(),bottomBar={if(route!="player" && playback.current!=null) CompactPlayer(vm,playback,{route="player"},{route="queue"}) else Spacer(Modifier.navigationBarsPadding())}) {padding->
                 Box(Modifier.padding(padding).fillMaxSize()) {
                     when(route) {
-                        "library"->if(group?.kind=="playlist") PlaylistDetail(vm,group,allTracks,data,{groupKind=""},{actionTrack=it;dialog="track"},{dialog="rename"},{dialog="playlistSongs"}) else LibraryScreen(vm,tracks,data,library,playback,group,{groupKind=""},{scope.launch {drawer.open()}},{next->if(next.kind=="settings") route="settings" else {groupKind=next.kind;groupKey=next.key;groupTitle=next.title}},{actionTrack=it;dialog="track"},{dialog="newPlaylist"},{playlistTracks=it;dialog="playlist"},{route="themes"},{permission.launch(vm.app.library.permission)})
-                        "player"->FullPlayer(vm,playback,current,currentUri in data.favorites,data.lyrics[currentUri].orEmpty(),::back,{actionTrack=current;dialog="playerActions"},{route="queue"},{route="equalizer"},{dialog="timer"},{playlistTracks=listOfNotNull(current);dialog="playlist"},{dialog="lyrics"},{route="themes"})
+                        "library"->if(group?.kind=="playlist") PlaylistDetail(vm,group,allTracks,data,{groupKind=""},{actionTrack=it;dialog="track"},{dialog="rename"},{dialog="playlistSongs"}) else LibraryScreen(vm,tracks,data,library,playback,group,{groupKind=""},{scope.launch {drawer.open()}},{next->if(next.kind=="settings") route="settings" else {groupKind=next.kind;groupKey=next.key;groupTitle=next.title}},{actionTrack=it;dialog="track"},{dialog="newPlaylist"},{playlistTracks=it;dialog="playlist"},{route="themes"},{permission.launch(vm.app.library.permission)},{pendingDelete=it;dialog="deleteGroup"})
+                        "player"->MaterialTheme(colorScheme=MaterialTheme.colorScheme.copy(primary=Color(playerTheme.accent))) {FullPlayer(vm,playback,current,currentUri in data.favorites,data.lyrics[currentUri].orEmpty(),::back,{actionTrack=current;dialog="playerActions"},{route="queue"},{route="equalizer"},{dialog="timer"},{playlistTracks=listOfNotNull(current);dialog="playlist"},{dialog="lyrics"},{route="playerThemes"})}
                         "queue"->QueueScreen(vm,playback,::back)
                         "settings"->SettingsScreen(vm,data,::back,::navigate)
                         "scan"->ScanScreen(vm,data,::back,{permission.launch(vm.app.library.permission)})
                         "hidden"->HiddenScreen(vm,data,allTracks,::back)
-                        "themes"->ThemeScreen(vm,data,::back)
+                        "themes","playerThemes"->ThemeScreen(vm,data,::back,route=="playerThemes")
                         "equalizer"->EqualizerScreen(vm,data,::back)
                         "backup"->Column {Header("Backup & restore",::back);Text("Save playlists, favorites, hidden songs, library details, lyrics and preferences. Music files are not included. Restoring replaces these saved settings and collections.",Modifier.padding(20.dp),color=Muted);ActionRow(Icons.Rounded.UploadFile,"Create backup") {export.launch("MusicPlayer-backup.json")};ActionRow(Icons.Rounded.Restore,"Restore backup") {importBackup.launch(arrayOf("application/json","text/plain","application/octet-stream"))};ActionRow(Icons.Rounded.RestorePage,"Original file backups") {route="tagBackups"}}
                         "tagBackups"->TagBackupsScreen(vm,::back)
                         "transfer"->TransferScreen(vm,tracks,::back)
-                        "widgets"->Column {Header("Widgets",::back);Text("Add a Music Player widget using your launcher's widget picker. It shares the same playback queue and controls.",Modifier.padding(24.dp),color=Muted);if(Build.VERSION.SDK_INT>=26) Button(onClick={val manager=AppWidgetManager.getInstance(context);if(manager.isRequestPinAppWidgetSupported) manager.requestPinAppWidget(ComponentName(context,PlayerWidgetProvider::class.java),Bundle.EMPTY,null) else vm.message.value="Long-press your home screen and open Widgets"},modifier=Modifier.padding(horizontal=24.dp)) {Text("Add widget")}}
+                        "widgets"->WidgetsScreen(vm,::back)
                     }
                 }
             }
@@ -164,6 +174,7 @@ import org.json.JSONObject
             }
         }
         when(dialog) {
+            "deleteGroup"->AlertDialog(onDismissRequest={dialog=null},title={Text("Delete selected music?")},text={Text("${pendingDelete.size} audio files will be permanently deleted. Android may ask for confirmation.")},confirmButton={TextButton(onClick={val targets=pendingDelete;dialog=null;delete(targets)}) {Text("Delete")}},dismissButton={TextButton(onClick={dialog=null;pendingDelete=emptyList()}) {Text("Cancel")}})
             "timer"->TimerDialog(vm,playback,{dialog=null})
             "speed"->SpeedDialog(vm,playback,{dialog=null})
             "newPlaylist"->TextEntryDialog("New playlist","Playlist name","",{dialog=null}) {name->vm.work {val id=vm.repository.createPlaylist(name);if(playlistTracks.isNotEmpty()) {vm.repository.addToPlaylist(id,playlistTracks.map {it.id.uri});playlistTracks=emptyList()}};dialog=null}
@@ -172,7 +183,7 @@ import org.json.JSONObject
             "playlistSongs"->SongPickerDialog(tracks,{dialog=null}) {chosen->vm.work {vm.repository.addToPlaylist(groupKey,chosen.map {it.id.uri})};dialog=null}
             "lyrics"->LyricsEditor(data.lyrics[currentUri].orEmpty(),{dialog=null},{dialog=null;lyricsImport.launch(arrayOf("text/*","application/octet-stream"))}) {text->current?.let {vm.work {vm.repository.setLyrics(it.id.uri,text)}};dialog=null}
             "edit"->actionTrack?.let {track->MetadataDialog(track,{dialog=null}) {title,artist,album,writeFile->if(writeFile) editFileTags(track,TagChange(title,artist,album)) else vm.work {val json=JSONObject(data.overrides[track.id.uri] ?: "{}").put("title",title).put("artist",artist).put("album",album);vm.repository.setOverride(track.id.uri,json.toString())};dialog=null}}
-            "delete"->actionTrack?.let {track->AlertDialog(onDismissRequest={dialog=null},title={Text("Delete from device?")},text={Text("The music file “${track.title}” will be permanently deleted. Android may ask for confirmation.")},confirmButton={TextButton(onClick={dialog=null;delete(track)}) {Text("Delete")}},dismissButton={TextButton(onClick={dialog=null}) {Text("Cancel")}})}
+            "delete"->actionTrack?.let {track->AlertDialog(onDismissRequest={dialog=null},title={Text("Delete from device?")},text={Text("The music file “${track.title}” will be permanently deleted. Android may ask for confirmation.")},confirmButton={TextButton(onClick={dialog=null;delete(listOf(track))}) {Text("Delete")}},dismissButton={TextButton(onClick={dialog=null}) {Text("Cancel")}})}
             "details"->actionTrack?.let {track->AlertDialog(onDismissRequest={dialog=null},title={Text("Song details")},text={Column(Modifier.verticalScroll(rememberScrollState())) {Text("${track.title}\n${track.artist}\n${track.album}\n${timeLabel(track.durationMs)}\n${track.mimeType.orEmpty()}\n\n${track.folder}\n${track.id.uri}")}},confirmButton={TextButton(onClick={dialog=null}) {Text("Done")}})}
         }
         restore?.let {backup->AlertDialog(onDismissRequest={restore=null},title={Text("Restore backup?")},text={Text("Replace saved collections and preferences with ${backup.playlists.size} playlists, ${backup.favorites.size} favorites and ${backup.lyrics.size} lyrics entries? Source music files are preserved. Media from another device may need to be relinked.")},confirmButton={TextButton(onClick={vm.work {vm.repository.restore(backup);vm.message.value="Backup restored"};restore=null}) {Text("Restore")}},dismissButton={TextButton(onClick={restore=null}) {Text("Cancel")}})}

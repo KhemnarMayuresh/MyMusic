@@ -52,7 +52,7 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
         }
     }
 }
-@Composable fun LibraryScreen(vm: PlayerViewModel,tracks: List<Track>,data: CollectionState,libraryState: LibraryState,playback: PlaybackSnapshot,group: BrowserGroup?,onBack: ()->Unit,onMenu: ()->Unit,onGroup: (BrowserGroup)->Unit,onTrackMenu: (Track)->Unit,onNewPlaylist: ()->Unit,onAddSelection: (List<Track>)->Unit,onTheme: ()->Unit,onPermission: ()->Unit) {
+@Composable fun LibraryScreen(vm: PlayerViewModel,tracks: List<Track>,data: CollectionState,libraryState: LibraryState,playback: PlaybackSnapshot,group: BrowserGroup?,onBack: ()->Unit,onMenu: ()->Unit,onGroup: (BrowserGroup)->Unit,onTrackMenu: (Track)->Unit,onNewPlaylist: ()->Unit,onAddSelection: (List<Track>)->Unit,onTheme: ()->Unit,onPermission: ()->Unit,onDeleteSelection: (List<Track>)->Unit) {
     var tab by rememberSaveable { mutableStateOf("Songs") }
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -120,14 +120,7 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
                 items(data.playlists,key={it.id}) { p -> ActionRow(Icons.Rounded.QueueMusic,p.name,"${p.entries.size} songs") { onGroup(BrowserGroup("playlist",p.id,p.name)) } }
             }
         } else {
-            val groups=when(tab) { "Folders"->tracks.groupBy { it.folder }; "Albums"->tracks.groupBy { it.albumId?.toString() ?: it.album }; else->tracks.groupBy { it.artist } }
-            LazyColumn {
-                items(groups.entries.sortedBy { it.value.firstOrNull()?.let { t->if(tab=="Albums") t.album else it.key } },key={it.key}) { (key,songs) ->
-                    val title=when(tab) { "Folders"->key.substringAfterLast('/').ifEmpty { "Music" };"Albums"->songs.first().album;else->key }
-                    ActionRow(when(tab) { "Folders"->Icons.Rounded.Folder;"Albums"->Icons.Rounded.Album;else->Icons.Rounded.Person },title,"${songs.size} songs") { onGroup(BrowserGroup(when(tab) {"Folders"->"folder";"Albums"->"album";else->"artist"},key,title)) }
-                }
-                if(groups.isEmpty()) item { Text("No ${tab.lowercase()} yet",Modifier.padding(24.dp),color=Muted) }
-            }
+            GroupBrowser(vm,tracks,when(tab) {"Folders"->"folder";"Albums"->"album";else->"artist"},onGroup,onAddSelection,onDeleteSelection)
         }
     }
 }

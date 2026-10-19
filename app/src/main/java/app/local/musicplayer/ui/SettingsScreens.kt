@@ -50,6 +50,7 @@ import app.local.musicplayer.playback.PlaybackSnapshot
             item {ActionRow(Icons.Rounded.BatteryChargingFull,"Background playback","Open Android app settings for battery and notification controls") {context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:${context.packageName}")))}}
             item {Section("Preference")}
             item {PreferenceToggle("Keep screen on","Stay awake while the full player is open",data.flag("keep_screen")) {vm.pref("keep_screen",it.toString())}}
+            item {PreferenceToggle("Lock screen playing","Show the player over the lock screen when opened during playback",data.flag("lock_screen",true)) {vm.pref("lock_screen",it.toString())}}
             item {ActionRow(Icons.Rounded.Notifications,"Notifications","Android manages media and lock-screen controls") {val intent=if(android.os.Build.VERSION.SDK_INT>=26) Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,context.packageName) else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:${context.packageName}"));context.startActivity(intent)}}
             item {ActionRow(Icons.Rounded.Palette,"Skin theme",data.pref("theme","Midnight")) {onNavigate("themes")}}
             item {ActionRow(Icons.Rounded.Widgets,"Widgets","Add playback controls to your home screen") {onNavigate("widgets")}}
@@ -74,21 +75,14 @@ import app.local.musicplayer.playback.PlaybackSnapshot
     Column {
         Header("Hidden music",onBack)
         LazyColumn {
-            if(data.hidden.isEmpty()) item {Text("No hidden songs",Modifier.padding(24.dp),color=Muted)}
+            val folders=data.pref("excluded_folders").lines().filter {it.isNotBlank()}
+            items(folders.distinct(),key={"folder:$it"}) {folder->ActionRow(Icons.Rounded.Folder,folder,"Hidden folder • Tap to unhide") {vm.work {vm.repository.setPreference("excluded_folders",folders.filterNot {it==folder}.joinToString("\n"))}}}
+            if(data.hidden.isEmpty() && folders.isEmpty()) item {Text("No hidden songs",Modifier.padding(24.dp),color=Muted)}
             items(data.hidden.toList(),key={it}) { uri ->
                 val track=all.find {it.id.uri==uri}
                 ActionRow(Icons.Rounded.Visibility,track?.title ?: "Unavailable song","Tap to unhide") {vm.work {vm.repository.setHidden(uri,false)}}
             }
         }
-    }
-}
-@Composable fun ThemeScreen(vm: PlayerViewModel,data: CollectionState,onBack: ()->Unit) {
-    Column {
-        Header("Themes",onBack)
-        Section("Library theme")
-        listOf("Midnight","Ocean","Sunset","Obsidian").forEach {theme-> ActionRow(if(data.pref("theme","Midnight")==theme) Icons.Rounded.RadioButtonChecked else Icons.Rounded.RadioButtonUnchecked,theme) {vm.pref("theme",theme)}}
-        Section("Player theme")
-        listOf("Artwork","Vinyl").forEach {theme-> ActionRow(if(data.pref("player_theme","Artwork")==theme) Icons.Rounded.RadioButtonChecked else Icons.Rounded.RadioButtonUnchecked,theme) {vm.pref("player_theme",theme)}}
     }
 }
 @Composable fun TimerDialog(vm: PlayerViewModel,state: PlaybackSnapshot,onDismiss: ()->Unit) {

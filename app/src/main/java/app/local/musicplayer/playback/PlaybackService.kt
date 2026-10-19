@@ -192,6 +192,7 @@ class PlaybackService: MediaSessionService() {
         if(intent?.action?.startsWith("widget.")==true) cancelGapResume()
         when(intent?.action) {
             "widget.toggle" -> if(player.isPlaying) player.pause() else { if(player.playbackState==Player.STATE_IDLE) player.prepare(); player.play() }
+            "widget.favorite" -> player.currentMediaItem?.let {item->val uri=item.mediaMetadata.extras?.getString("source_uri") ?: item.localConfiguration?.uri?.toString();if(uri!=null) scope.launch {app.collections.setFavorite(uri,uri !in app.collections.state.value.favorites);PlayerWidgetProvider.refresh(this@PlaybackService,player)}}
             "widget.next" -> player.seekToNextMediaItem()
             "widget.previous" -> player.seekToPrevious()
         }

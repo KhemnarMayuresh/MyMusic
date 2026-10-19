@@ -34,8 +34,9 @@ class PlayerViewModel(application: Application): AndroidViewModel(application) {
     val tracks=combine(allTracks,collections) { all,data ->
         val minimum=data.pref("min_duration","0").toLongOrNull()?.coerceIn(0,3600) ?: 0
         val excluded=data.pref("excluded_folders").lines().filter { it.isNotBlank() }
-        all.filter { it.id.uri !in data.hidden && it.durationMs>=minimum*1000 && excluded.none { folder -> it.folder.startsWith(folder) } }
+        all.filter { it.id.uri !in data.hidden && it.durationMs>=minimum*1000 && excluded.none { folder -> it.folder.trimEnd('/' )==folder.trimEnd('/') || it.folder.startsWith(folder.trimEnd('/')+"/") } }
     }.stateIn(viewModelScope,SharingStarted.Eagerly,emptyList())
+    val navigation=MutableStateFlow<String?>(null)
     val message=MutableStateFlow<String?>(null)
     private var scanJob: Job?=null
     private val observer=object: ContentObserver(Handler(Looper.getMainLooper())) { override fun onChange(selfChange: Boolean) { rescan(300) } }
