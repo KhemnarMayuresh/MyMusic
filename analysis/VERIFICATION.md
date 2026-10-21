@@ -1,4 +1,12 @@
-# Current APK — reshuffle, branded intro and custom themes
+# Current APK — My Music, custom library themes and player revisions
+
+2026-10-21: 33 JVM tests passed, zero errors/failures/skips. Final full emulator run passed 25 of 26 tests; the added visual screenshot check initially sampled Film before pause/visual settling. After correcting test synchronization, its focused rerun passed. Thus all 26 device cases passed across these runs; this is not a claim of one fully green 26-case run. Direct player-return checks cover Playlists, Folders, Albums, Artists and an opened folder. Custom library theme create/reload/edit/delete and the new playback/paused animations were exercised on API37. See [revision details](LIBRARY-PLAYER-REVISION-2026-10-21.md).
+
+Final focused visual test, unit/build and fresh-process lint command succeeded in 4m21s. Lint: zero errors/fatal issues, 69 warnings. No product changes followed the full emulator run; subsequent changes only corrected test synchronization and documentation.
+
+Current `MusicPlayer.apk` SHA-256: `3E4F3BB81C719AF37FFCAB20832545C0138EEB7DC3E68608E4646BDBF8FBFE82`. Copied from the verified debug build, installed in emulator-5554, permissions granted and launched. Packaged launcher label verified as My Music. Supplied icon SHA-256 remains `4F66B3F1BBFB7DFFF941A7A184C038A682EDAEB81EB82C93D85DA3E42220E271`. Original music preserved. Fifteen built-in player themes remain; library and player custom themes persist independently. Sections below are historical.
+
+# Previous APK — reshuffle, branded intro and custom themes
 
 2026-10-21: all 30 JVM tests and 24 API37 emulator tests passed, zero failures/errors/skips. Final full suite/build succeeded in 5m43s; instrumentation report time 320.25s. Actual queue and player shuffle icons were exercised, with preserved current occurrence, position and playback. The intro and custom-theme workflow exercised color picking, atomic save/apply, edit/rename, activity recreation and deletion. See [revision details](RESHUFFLE-INTRO-THEMES-2026-10-21.md).
 

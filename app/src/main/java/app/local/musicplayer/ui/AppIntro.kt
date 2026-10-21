@@ -39,7 +39,7 @@ import kotlinx.coroutines.delay
     Column(horizontalAlignment=Alignment.CenterHorizontally) {
      Image(painterResource(R.drawable.brand_icon),"Music Player logo",Modifier.size(152.dp).graphicsLayer {scaleX=scale;scaleY=scale}.clip(RoundedCornerShape(34.dp)))
      Spacer(Modifier.height(28.dp))
-     Text("Music Player",color=Color(0xFFFFDB9B),style=MaterialTheme.typography.headlineLarge)
+     Text("My Music",color=Color(0xFFFFDB9B),style=MaterialTheme.typography.headlineLarge)
      Text("Offline music, your way",color=Color(0xFFE0CCE9),modifier=Modifier.padding(top=10.dp))
     }
     TextButton(onClick={visibility.targetState=false},modifier=Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom=32.dp)) {Text("Start listening",color=Color(0xFFFFD391))}

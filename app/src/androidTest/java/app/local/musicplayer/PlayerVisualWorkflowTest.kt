@@ -70,6 +70,17 @@ class PlayerVisualWorkflowTest {
    ins.runOnMainSync {controller.pause()};Thread.sleep(1000)
    waitFor {val first=crop();Thread.sleep(350);val second=crop();val same=first.sameAs(second);first.recycle();second.recycle();same}
    device.executeShellCommand("screencap -p /sdcard/Download/MusicPlayerTestOutput/cover-cassette-blue.png")
+   for(theme in listOf("Neon","Film","Waveform","Minimal")) {
+    repository.setPreference("player_theme",theme);Thread.sleep(700)
+    device.executeShellCommand("screencap -p /sdcard/Download/MusicPlayerTestOutput/revised-$theme.png")
+    if(theme!="Minimal") {
+     waitFor {val first=crop();Thread.sleep(350);val second=crop();val same=first.sameAs(second);first.recycle();second.recycle();same}
+     val still=crop()
+     ins.runOnMainSync {controller.play()}
+     waitFor {val frame=crop();val changed=!still.sameAs(frame);frame.recycle();changed};still.recycle()
+     ins.runOnMainSync {controller.pause()};Thread.sleep(700)
+    }
+   }
    repository.setOverride(source.id.uri,org.json.JSONObject(oldOverride).put("cover",red.mediaMetadata.artworkUri.toString()).toString())
    waitFor {backgroundHas(true)}
    repository.setOverride(source.id.uri,oldOverride)

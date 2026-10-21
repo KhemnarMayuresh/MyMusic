@@ -25,26 +25,42 @@ import kotlin.math.*
 
 /** The preview and live player deliberately use the same visual renderer. */
 @Composable internal fun PlayerThemeArtwork(theme:PlayerTheme,uri:String?,modifier:Modifier=Modifier,playing:Boolean=false,entry:String?=null) {
- val motion=rememberPlayerMotion(playing && theme.style in listOf(1,2,4,15,17),entry)
+ val motion=rememberPlayerMotion(playing && theme.style in listOf(1,2,4,5,15,16,17),entry)
  val accent=Color(theme.accent)
  Box(modifier.then(if(theme.style==1) Modifier.rotate(motion.degrees) else Modifier),contentAlignment=Alignment.Center) {
   when(theme.style) {
    1 -> {Canvas(Modifier.fillMaxSize()) {val r=size.minDimension/2;drawCircle(Color(0xFF151518),r);for(i in 1..20) drawCircle(Color(0xFF333338),r*i/21,style=androidx.compose.ui.graphics.drawscope.Stroke(1.5f));drawCircle(accent,r*.36f)};Artwork(uri,Modifier.fillMaxSize(.3f).clip(CircleShape));Box(Modifier.size(10.dp).background(Color.Black,CircleShape))}
-   2 -> {Box(Modifier.fillMaxWidth().aspectRatio(1.5f).background(Color(0xFFB4C1B5),RoundedCornerShape(12.dp)).padding(16.dp)) {Column {Text("STEREO   •   SIDE A",color=Color(0xFF263B38),style=MaterialTheme.typography.labelSmall);Spacer(Modifier.weight(1f));Row(Modifier.fillMaxWidth().height(58.dp).background(Color(0xFF283331),RoundedCornerShape(30.dp)),horizontalArrangement=Arrangement.SpaceAround,verticalAlignment=Alignment.CenterVertically) {repeat(2) {Canvas(Modifier.size(40.dp).rotate(motion.degrees*2)) {drawCircle(accent);drawCircle(Color(0xFF66746D),style=androidx.compose.ui.graphics.drawscope.Stroke(8.dp.toPx()));for(spoke in 0..5) {val a=spoke*PI/3;drawLine(Color(0xFF283331),center,Offset(center.x+cos(a).toFloat()*size.width*.35f,center.y+sin(a).toFloat()*size.height*.35f),4.dp.toPx())};drawCircle(Color(0xFF283331),size.width*.12f)}}};Spacer(Modifier.weight(1f));Text("MUSIC / HIGH FIDELITY",color=Color(0xFF263B38),style=MaterialTheme.typography.labelSmall)}}}
+   2 -> {Box(Modifier.fillMaxWidth().aspectRatio(1.5f).background(Color(0xFFB4C1B5),RoundedCornerShape(12.dp)).padding(16.dp)) {Artwork(uri,Modifier.matchParentSize().clip(RoundedCornerShape(8.dp)));Box(Modifier.matchParentSize().background(Color.Black.copy(alpha=.2f)));Column {Text("STEREO   •   SIDE A",color=Color.White,style=MaterialTheme.typography.labelSmall);Spacer(Modifier.weight(1f));Row(Modifier.fillMaxWidth().height(58.dp).background(Color(0xFF283331),RoundedCornerShape(30.dp)),horizontalArrangement=Arrangement.SpaceAround,verticalAlignment=Alignment.CenterVertically) {repeat(2) {Canvas(Modifier.size(40.dp).rotate(motion.degrees*2)) {drawCircle(accent);drawCircle(Color(0xFF66746D),style=androidx.compose.ui.graphics.drawscope.Stroke(8.dp.toPx()));for(spoke in 0..5) {val a=spoke*PI/3;drawLine(Color(0xFF283331),center,Offset(center.x+cos(a).toFloat()*size.width*.35f,center.y+sin(a).toFloat()*size.height*.35f),4.dp.toPx())};drawCircle(Color(0xFF283331),size.width*.12f)}}};Spacer(Modifier.weight(1f));Text("MUSIC / HIGH FIDELITY",color=Color.White,style=MaterialTheme.typography.labelSmall)}}}
    3 -> {Canvas(Modifier.fillMaxSize()) {val r=size.minDimension*.45f;for(i in 0..3) drawOval(accent.copy(alpha=.5f),Offset(size.width/2-r,size.height/2-r*(.4f+i*.12f)),Size(r*2,r*(.8f+i*.24f)),style=androidx.compose.ui.graphics.drawscope.Stroke(2f));drawCircle(accent,6f,Offset(size.width*.9f,size.height*.5f))};Artwork(uri,Modifier.fillMaxSize(.58f).clip(CircleShape))}
-   4 -> {Column(horizontalAlignment=Alignment.CenterHorizontally) {Artwork(uri,Modifier.fillMaxSize(.55f).weight(1f));Canvas(Modifier.fillMaxWidth().height(64.dp)) {for(i in 0..42) {val h=(.035f+motion.levels[i]*.965f)*size.height;val x=i*size.width/43;drawLine(accent,Offset(x,(size.height-h)/2),Offset(x,(size.height+h)/2),size.width/65)}}}}
-   5 -> Box(Modifier.fillMaxSize(.88f).rotate(-5f).border(3.dp,accent,RoundedCornerShape(20.dp)).padding(10.dp)) {Artwork(uri,Modifier.fillMaxSize())}
+   4 -> Column(horizontalAlignment=Alignment.CenterHorizontally) {
+    Artwork(uri,Modifier.fillMaxSize(.72f).weight(1f).clip(RoundedCornerShape(18.dp)))
+    Canvas(Modifier.fillMaxWidth().height(72.dp)) {
+     val path=Path();val lower=Path();val step=size.width/42
+     fun y(i:Int,sign:Float)=center.y+sign*(2.dp.toPx()+motion.levels[i]*size.height*.44f)
+     for(sign in listOf(-1f,1f)) {
+      val p=if(sign<0) path else lower;p.moveTo(0f,y(0,sign))
+      for(i in 1..42) {val x=i*step;val mid=x-step/2;p.cubicTo(mid,y(i-1,sign),mid,y(i,sign),x,y(i,sign))}
+      drawPath(p,accent,style=androidx.compose.ui.graphics.drawscope.Stroke(2.5.dp.toPx(),cap=StrokeCap.Round))
+     }
+    }
+   }
+   5 -> Box(Modifier.fillMaxSize(.88f).padding(12.dp)) {
+    Artwork(uri,Modifier.fillMaxSize().clip(RoundedCornerShape(20.dp)))
+    Canvas(Modifier.matchParentSize()) {
+     val shader=android.graphics.SweepGradient(center.x,center.y,intArrayOf(accent.toArgb(),android.graphics.Color.CYAN,0xFFFF4FE1.toInt(),accent.toArgb()),null)
+     shader.setLocalMatrix(android.graphics.Matrix().apply {setRotate(motion.degrees,center.x,center.y)})
+     val brush=ShaderBrush(shader)
+     for(width in listOf(16f,9f,3f)) drawRoundRect(brush,cornerRadius=androidx.compose.ui.geometry.CornerRadius(20.dp.toPx()),alpha=if(width==3f) 1f else .16f,style=androidx.compose.ui.graphics.drawscope.Stroke(width.dp.toPx()))
+    }
+   }
    6 -> Column(Modifier.fillMaxSize(.85f).rotate(5f).background(Color(0xFFFFF7E8)).padding(12.dp),horizontalAlignment=Alignment.CenterHorizontally) {Artwork(uri,Modifier.weight(1f).fillMaxWidth());Text("a little music, a little magic",color=Color.DarkGray,style=MaterialTheme.typography.labelSmall,modifier=Modifier.padding(vertical=16.dp))}
-   7 -> {Canvas(Modifier.fillMaxSize()) {drawLine(Color.White,Offset(size.width*.1f,size.height*.8f),Offset(size.width*.9f,size.height*.8f),2f)};Icon(Icons.Rounded.GraphicEq,null,Modifier.fillMaxSize(.42f),tint=Color.White)}
+   7 -> Artwork(uri,Modifier.fillMaxSize(.76f).clip(RoundedCornerShape(12.dp)))
    8 -> {Canvas(Modifier.fillMaxSize()) {drawCircle(Color(0xFFFFCC88),size.minDimension*.38f);for(i in 1..7) drawRect(Color(theme.top),Offset(0f,size.height*(.54f+i*.045f)),Size(size.width,i*1.8f))};Artwork(uri,Modifier.fillMaxSize(.45f).clip(CircleShape))}
    9 -> Box(Modifier.fillMaxSize(.86f).background(Color.White.copy(alpha=.14f),RoundedCornerShape(26.dp)).border(1.dp,Color.White.copy(alpha=.45f),RoundedCornerShape(26.dp)).padding(18.dp)) {Artwork(uri,Modifier.fillMaxSize())}
-   10 -> {Canvas(Modifier.fillMaxSize()) {for(i in 1..5) drawCircle(accent.copy(alpha=.055f*i),size.minDimension*(.54f-i*.05f),Offset(size.width*(.3f+i*.07f),size.height*.5f))};Artwork(uri,Modifier.fillMaxSize(.68f).clip(CircleShape))}
    11 -> Column(Modifier.fillMaxSize(.9f).background(Color(0xFFE9CCB3),RoundedCornerShape(16.dp)).padding(16.dp)) {Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {Text("FM  88 • 108",color=Color(0xFF44354A),style=MaterialTheme.typography.labelSmall);Icon(Icons.Rounded.Radio,null,tint=Color(0xFF44354A))};Artwork(uri,Modifier.weight(1f).fillMaxWidth().padding(vertical=12.dp));Canvas(Modifier.fillMaxWidth().height(30.dp)) {for(i in 0..14) drawLine(Color(0xFF44354A),Offset(i*size.width/15,0f),Offset(i*size.width/15,size.height),3f)}}
-   12 -> {Canvas(Modifier.fillMaxSize()) {val path=Path().apply {moveTo(size.width*.5f,0f);lineTo(size.width,size.height*.8f);lineTo(0f,size.height*.8f);close()};drawPath(path,Brush.linearGradient(listOf(accent.copy(alpha=.2f),accent.copy(alpha=.8f),Color.White.copy(alpha=.1f))))};Box(Modifier.fillMaxSize(.6f).rotate(45f).border(2.dp,accent,RoundedCornerShape(16.dp)).padding(6.dp)) {Artwork(uri,Modifier.fillMaxSize())}}
-   13 -> Column(Modifier.fillMaxSize(.84f).background(Color.White.copy(alpha=.2f),RoundedCornerShape(24.dp)).border(1.dp,Color.White.copy(alpha=.6f),RoundedCornerShape(24.dp)).padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally) {Text("NOW PLAYING",color=Color.White,style=MaterialTheme.typography.labelSmall);Spacer(Modifier.height(14.dp));Artwork(uri,Modifier.weight(1f).fillMaxWidth());Spacer(Modifier.height(14.dp));Box(Modifier.height(4.dp).fillMaxWidth(.4f).background(accent,CircleShape))}
    14 -> {Canvas(Modifier.fillMaxSize()) {drawRoundRect(accent.copy(alpha=.16f),cornerRadius=androidx.compose.ui.geometry.CornerRadius(40f));val p=Path().apply {moveTo(size.width,0f);lineTo(size.width,size.height);lineTo(0f,size.height);close()};drawPath(p,accent.copy(alpha=.4f))};Artwork(uri,Modifier.fillMaxSize(.7f).clip(CircleShape))}
    15 -> {Canvas(Modifier.fillMaxSize()) {val energy=motion.levels.last();for(i in 1..5) drawCircle(accent.copy(alpha=.06f+i*.025f),size.minDimension*(.17f+i*.055f+energy*.025f),style=androidx.compose.ui.graphics.drawscope.Stroke(2f+i))};Artwork(uri,Modifier.fillMaxSize(.58f).clip(CircleShape))}
-   16 -> {Box(Modifier.fillMaxSize(.9f).background(Color(0xFF111111),RoundedCornerShape(8.dp)).padding(horizontal=24.dp,vertical=12.dp)) {Artwork(uri,Modifier.fillMaxSize())};Canvas(Modifier.fillMaxSize(.9f)) {for(i in 0..10) for(x in listOf(size.width*.025f,size.width*.945f)) drawRoundRect(Color.White.copy(alpha=.7f),Offset(x,size.height*(i+.2f)/11),Size(size.width*.03f,size.height*.04f),androidx.compose.ui.geometry.CornerRadius(3f))}}
+   16 -> {Box(Modifier.fillMaxSize(.9f).background(Color(0xFF111111),RoundedCornerShape(8.dp)).padding(horizontal=24.dp,vertical=12.dp)) {Artwork(uri,Modifier.fillMaxSize())};Canvas(Modifier.fillMaxSize(.9f)) {for(i in 0..10) for(x in listOf(size.width*.025f,size.width*.945f)) drawRoundRect(Color.White.copy(alpha=.7f),Offset(x,size.height*((i+motion.degrees/360f*11)%11)/11),Size(size.width*.03f,size.height*.04f),androidx.compose.ui.geometry.CornerRadius(3f))}}
    17 -> {Canvas(Modifier.fillMaxSize()) {for(i in 0..4) drawCircle(accent.copy(alpha=.15f+i*.12f),size.minDimension*(.36f+i*.025f),style=androidx.compose.ui.graphics.drawscope.Stroke(2f));val a=motion.degrees*PI/180;val radius=size.minDimension*.46f;drawCircle(accent,7.dp.toPx(),Offset(center.x+cos(a).toFloat()*radius,center.y+sin(a).toFloat()*radius))};Artwork(uri,Modifier.fillMaxSize(.64f).clip(CircleShape))}
    else -> Artwork(uri,Modifier.fillMaxSize())
   }
@@ -86,7 +102,7 @@ import kotlin.math.*
  Column(Modifier.fillMaxSize()) {
   Header(if(editing) "Create your theme" else "Themes",{if(editing) editing=false else onBack()})
   if(!editing) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.Center) {TextButton(onClick={player=false}) {Text("Library",color=if(!player) Color.White else Muted)};TextButton(onClick={player=true}) {Text("Player",color=if(player) Color.White else Muted)}}
-  if(!player) Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {LibraryThemes.all.forEach {option->Row(Modifier.fillMaxWidth().padding(12.dp).height(85.dp).background(Brush.horizontalGradient(option.colors.map {Color(it)}),RoundedCornerShape(14.dp)).clickable {vm.pref("theme",option.name)}.padding(20.dp),verticalAlignment=Alignment.CenterVertically) {Text(option.name,Modifier.weight(1f));if(data.pref("theme","Midnight")==option.name) Icon(Icons.Rounded.CheckCircle,null)}}}
+  if(!player) LibraryThemeEditor(vm,data,Modifier.weight(1f))
   else {
    Text(theme.name,Modifier.align(Alignment.CenterHorizontally).padding(8.dp),style=MaterialTheme.typography.titleLarge)
    ThemePhonePreview(theme,preview,artwork,actions,Modifier.weight(1f))
@@ -129,7 +145,7 @@ import kotlin.math.*
  if(deleting) AlertDialog(onDismissRequest={deleting=false},title={Text("Delete theme?")},text={Text(savedTheme.name)},confirmButton={TextButton(onClick={val id=savedTheme.id;vm.work {vm.repository.setPreferences(buildMap {put(CustomThemes.KEY,CustomThemes.encode(custom.filterNot {it.id==id}));if(data.pref("player_theme")==id) put("player_theme","Artwork")});selected="Artwork"};deleting=false}) {Text("Delete")}},dismissButton={TextButton(onClick={deleting=false}) {Text("Cancel")}})
 }
 
-@Composable private fun ThemeColorField(label:String,value:String,onValue:(String)->Unit,modifier:Modifier) {
+@Composable internal fun ThemeColorField(label:String,value:String,onValue:(String)->Unit,modifier:Modifier) {
  var picking by remember {mutableStateOf(false)}
  Column(modifier) {
   Text(label,style=MaterialTheme.typography.labelSmall,color=Muted)

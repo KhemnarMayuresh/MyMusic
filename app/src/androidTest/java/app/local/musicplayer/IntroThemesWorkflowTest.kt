@@ -31,7 +31,7 @@ class IntroThemesWorkflowTest {
     device.executeShellCommand("mkdir -p /sdcard/Download/MusicPlayerTestOutput");device.executeShellCommand("screencap -p /sdcard/Download/MusicPlayerTestOutput/intro-20261021.png")
    } finally {config.waitForIdleTimeout=idle}
    assertTrue(device.wait(Until.hasObject(By.desc("Open menu")),60000))
-   assertEquals(18,PlayerThemes.all.size)
+   assertEquals(15,PlayerThemes.all.size)
    device.findObject(By.desc("Themes")).click();text("Player");text("Create theme")
    assertTrue(device.wait(Until.hasObject(By.clazz("android.widget.EditText")),10000))
    device.findObject(By.clazz("android.widget.EditText")).setText("My test violet")

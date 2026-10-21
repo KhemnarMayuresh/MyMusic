@@ -55,6 +55,7 @@ import org.json.JSONObject
     val scope=rememberCoroutineScope()
     val fileOps=remember {FileOperations(context)}
     val editFileTags=rememberTagEditor(vm)
+    var libraryTab by rememberSaveable {mutableStateOf("Songs")}
     var route by rememberSaveable {mutableStateOf("library")}
     var groupKind by rememberSaveable {mutableStateOf("")};var groupKey by rememberSaveable {mutableStateOf("")};var groupTitle by rememberSaveable {mutableStateOf("")}
     val group=if(groupKind.isEmpty()) null else BrowserGroup(groupKind,groupKey,groupTitle)
@@ -120,15 +121,15 @@ import org.json.JSONObject
     val importBackup=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {uri->if(uri!=null) vm.work {
         restore=withContext(Dispatchers.IO) {context.contentResolver.openInputStream(uri)?.use {BackupCodec.decode(it.readBounded(BackupCodec.MAX_BYTES).toString(Charsets.UTF_8))} ?: error("Unable to read backup")}
     }}
-    MusicTheme(data.pref("theme","Midnight")) {
-        val gradient=LibraryThemes.find(data.pref("theme","Midnight")).colors.map {Color(it)}
+    MusicTheme(data.pref("theme","Midnight"),data.pref(CustomLibraryThemes.KEY)) {
+        val gradient=LibraryThemes.find(data.pref("theme","Midnight"),data.pref(CustomLibraryThemes.KEY)).colors.map {Color(it)}
         val playerTheme=PlayerThemes.find(data.pref("player_theme","Artwork"),data.pref(CustomThemes.KEY))
         val playerCover=rememberCover(if(route=="player" && playerTheme.coverColors) playingArtwork else null)
         val background=if(route=="player") playerCover?.let {listOf(Color(it.colors[0]),Color(it.colors[1]))} ?: listOf(Color(playerTheme.top),Color(playerTheme.bottom)) else gradient
         ModalNavigationDrawer(drawerState=drawer,drawerContent={ModalDrawerSheet(drawerContainerColor=Ink,modifier=Modifier.width(300.dp)) {
             Column(Modifier.verticalScroll(rememberScrollState()).statusBarsPadding()) {
                 Icon(Icons.Rounded.GraphicEq,null,Modifier.padding(start=24.dp,top=24.dp).size(44.dp),tint=MaterialTheme.colorScheme.primary)
-                Text("Music Player",Modifier.padding(24.dp),style=MaterialTheme.typography.headlineMedium)
+                Text("My Music",Modifier.padding(24.dp),style=MaterialTheme.typography.headlineMedium)
                 listOf(Triple("Library","library",Icons.Rounded.LibraryMusic),Triple("Settings","settings",Icons.Rounded.Settings),Triple("Equalizer","equalizer",Icons.Rounded.Tune),Triple("Sleep timer","timer",Icons.Rounded.Alarm),Triple("Skin theme","themes",Icons.Rounded.Palette),Triple("Widgets","widgets",Icons.Rounded.Widgets),Triple("Backup & restore","backup",Icons.Rounded.Backup),Triple("Music transfer","transfer",Icons.Rounded.PhonelinkRing)).forEach { (title,destination,icon)->
                     ActionRow(icon,title) {scope.launch {drawer.close()};if(destination=="timer") dialog="timer" else {route=destination;if(destination=="library") groupKind=""}}
                 }
@@ -137,7 +138,7 @@ import org.json.JSONObject
             Scaffold(containerColor=Color.Transparent,contentColor=Color.White,snackbarHost={SnackbarHost(snackbar)},modifier=Modifier.background(Brush.verticalGradient(background)).statusBarsPadding(),bottomBar={if(route!="player" && playback.current!=null) CompactPlayer(vm,playback,{route="player"},{route="queue"}) else Spacer(Modifier.navigationBarsPadding())}) {padding->
                 Box(Modifier.padding(padding).fillMaxSize()) {
                     when(route) {
-                        "library"->if(group?.kind=="playlist") PlaylistDetail(vm,group,allTracks,data,{groupKind=""},{actionTrack=it;dialog="track"},{dialog="rename"},{dialog="playlistSongs"}) else LibraryScreen(vm,tracks,data,library,playback,group,{groupKind=""},{scope.launch {drawer.open()}},{next->if(next.kind=="settings") route="settings" else {groupKind=next.kind;groupKey=next.key;groupTitle=next.title}},{actionTrack=it;dialog="track"},{dialog="newPlaylist"},{playlistTracks=it;dialog="playlist"},{route="themes"},{permission.launch(vm.app.library.permission)},{pendingDelete=it;dialog="deleteGroup"})
+                        "library"->if(group?.kind=="playlist") PlaylistDetail(vm,group,allTracks,data,{groupKind=""},{actionTrack=it;dialog="track"},{dialog="rename"},{dialog="playlistSongs"}) else LibraryScreen(vm,tracks,data,library,playback,group,libraryTab,{libraryTab=it},{groupKind=""},{scope.launch {drawer.open()}},{next->if(next.kind=="settings") route="settings" else {groupKind=next.kind;groupKey=next.key;groupTitle=next.title}},{actionTrack=it;dialog="track"},{dialog="newPlaylist"},{playlistTracks=it;dialog="playlist"},{route="themes"},{permission.launch(vm.app.library.permission)},{pendingDelete=it;dialog="deleteGroup"})
                         "player"->MaterialTheme(colorScheme=MaterialTheme.colorScheme.copy(primary=Color(playerTheme.accent))) {FullPlayer(vm,playback,current,currentUri in data.favorites,data.lyrics[currentUri].orEmpty(),::back,{actionTrack=current;dialog="playerActions"},{route="queue"},{route="equalizer"},{dialog="timer"},{playlistTracks=listOfNotNull(current);dialog="playlist"},{dialog="lyrics"},{route="playerThemes"})}
                         "queue"->QueueScreen(vm,playback,::back)
                         "settings"->SettingsScreen(vm,data,::back,::navigate)

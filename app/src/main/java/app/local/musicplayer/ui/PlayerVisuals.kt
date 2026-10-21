@@ -35,7 +35,13 @@ internal data class PlayerMotion(val degrees:Float=0f,val levels:FloatArray=Floa
             while(true) withFrameNanos {now->
                 val delta=if(last==0L) 0f else ((now-last)/1_000_000_000f).coerceAtMost(.1f)
                 last=now
-                motion=PlayerMotion((motion.degrees+delta*30f)%360f,PlayerAudioSignal.active?.snapshot() ?: FloatArray(43))
+                val target=PlayerAudioSignal.active?.snapshot() ?: FloatArray(43)
+                val blend=1f-kotlin.math.exp(-delta*24f)
+                val levels=FloatArray(43) {i->
+                    val spatial=(target[(i-1).coerceAtLeast(0)]+2*target[i]+target[(i+1).coerceAtMost(42)])/4
+                    motion.levels[i]+(spatial-motion.levels[i])*blend
+                }
+                motion=PlayerMotion((motion.degrees+delta*30f)%360f,levels)
             }
         }
     }

@@ -12,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -27,7 +29,7 @@ import app.local.musicplayer.playback.PlaybackSnapshot
     val item=state.current ?: return
     Column(Modifier.background(Color.White.copy(alpha=.06f)).navigationBarsPadding()) {
         LinearProgressIndicator(progress={if(state.duration>0) state.position.toFloat()/state.duration else 0f},Modifier.fillMaxWidth().height(2.dp),color=MaterialTheme.colorScheme.primary,trackColor=Color.White.copy(alpha=.06f))
-        Row(Modifier.fillMaxWidth().height(78.dp).clickable(onClick=onPlayer).padding(horizontal=12.dp),verticalAlignment=Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().height(78.dp).semantics {contentDescription="Open player"}.clickable(onClick=onPlayer).padding(horizontal=12.dp),verticalAlignment=Alignment.CenterVertically) {
             Artwork(item.mediaMetadata.artworkUri?.toString(),Modifier.size(52.dp).clip(CircleShape))
             Column(Modifier.weight(1f).padding(horizontal=12.dp)) {
                 Text(item.mediaMetadata.title?.toString() ?: "Unknown song",maxLines=1,overflow=TextOverflow.Ellipsis,fontWeight=FontWeight.Bold)

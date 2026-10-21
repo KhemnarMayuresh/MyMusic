@@ -8,7 +8,7 @@ val Gold=Color(0xFFFFB900)
 val Muted=Color(0xFF9C98B2)
 val Ink=Color(0xFF080B24)
 val Panel=Color(0xFF252044)
-data class LibraryTheme(val name:String,val colors:List<Long>,val accent:Long)
+data class LibraryTheme(val name:String,val colors:List<Long>,val accent:Long,val id:String=name)
 object LibraryThemes {
  val all=listOf(
   LibraryTheme("Midnight",listOf(0xFF080B24,0xFF17103F,0xFF35134D),0xFFFFB900),
@@ -19,10 +19,10 @@ object LibraryThemes {
   LibraryTheme("Forest",listOf(0xFF071E19,0xFF1E493B),0xFF9AE1AF),
   LibraryTheme("Ruby",listOf(0xFF220B17,0xFF591D38),0xFFFFA3BF),
   LibraryTheme("Graphite",listOf(0xFF11151B,0xFF2E3944),0xFFC2D7E9))
- fun find(name:String)=all.find {it.name==name} ?: all.first()
+ fun find(name:String,raw:String="")=(all+CustomLibraryThemes.decode(raw)).find {it.id==name} ?: all.first()
 }
-@Composable fun MusicTheme(theme:String,content:@Composable ()->Unit) {
- val accent=Color(LibraryThemes.find(theme).accent)
+@Composable fun MusicTheme(theme:String,custom:String="",content:@Composable ()->Unit) {
+ val accent=Color(LibraryThemes.find(theme,custom).accent)
  MaterialTheme(colorScheme=darkColorScheme(primary=accent,onPrimary=Ink,secondary=accent,background=Ink,surface=Color(0xFF17152E),surfaceVariant=Panel,onSurface=Color.White,onSurfaceVariant=Muted),content=content)
 }
 fun timeLabel(ms: Long): String {

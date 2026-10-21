@@ -52,8 +52,7 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
         }
     }
 }
-@Composable fun LibraryScreen(vm: PlayerViewModel,tracks: List<Track>,data: CollectionState,libraryState: LibraryState,playback: PlaybackSnapshot,group: BrowserGroup?,onBack: ()->Unit,onMenu: ()->Unit,onGroup: (BrowserGroup)->Unit,onTrackMenu: (Track)->Unit,onNewPlaylist: ()->Unit,onAddSelection: (List<Track>)->Unit,onTheme: ()->Unit,onPermission: ()->Unit,onDeleteSelection: (List<Track>)->Unit) {
-    var tab by rememberSaveable { mutableStateOf("Songs") }
+@Composable fun LibraryScreen(vm: PlayerViewModel,tracks: List<Track>,data: CollectionState,libraryState: LibraryState,playback: PlaybackSnapshot,group: BrowserGroup?,tab:String,onTab:(String)->Unit,onBack: ()->Unit,onMenu: ()->Unit,onGroup: (BrowserGroup)->Unit,onTrackMenu: (Track)->Unit,onNewPlaylist: ()->Unit,onAddSelection: (List<Track>)->Unit,onTheme: ()->Unit,onPermission: ()->Unit,onDeleteSelection: (List<Track>)->Unit) {
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var sortMenu by remember { mutableStateOf(false) }
@@ -82,7 +81,7 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
             OutlinedTextField(query,{query=it},Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=4.dp),singleLine=true,placeholder={Text("Search songs, artists, albums")},leadingIcon={Icon(Icons.Rounded.Search,null)},shape=RoundedCornerShape(24.dp))
         }
         if(group==null && !searching) ScrollableTabRow(selectedTabIndex=listOf("Songs","Playlists","Folders","Albums","Artists").indexOf(tab),containerColor=Color.Transparent,edgePadding=8.dp,divider={}) {
-            listOf("Songs","Playlists","Folders","Albums","Artists").forEach { label -> Tab(selected=tab==label,onClick={tab=label;selection=emptySet()},text={Text(label,fontWeight=if(tab==label) FontWeight.Bold else FontWeight.Normal,style=MaterialTheme.typography.titleLarge)}) }
+            listOf("Songs","Playlists","Folders","Albums","Artists").forEach { label -> Tab(selected=tab==label,onClick={onTab(label);selection=emptySet()},text={Text(label,fontWeight=if(tab==label) FontWeight.Bold else FontWeight.Normal,style=MaterialTheme.typography.titleLarge)}) }
         }
         if(libraryState is LibraryState.PermissionRequired) {
             EmptyLibrary("Your music, on your device","Allow audio access to discover your songs.","Allow audio access",onPermission)
