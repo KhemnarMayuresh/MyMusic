@@ -70,7 +70,7 @@ import kotlin.math.abs
  }}
  Column {
   Header("Playing queue",onBack) {
-   IconButton(onClick={vm.connection.controller?.shuffleModeEnabled=!state.shuffle}) {Icon(Icons.Rounded.Shuffle,"Shuffle",tint=if(state.shuffle) MaterialTheme.colorScheme.primary else Muted)}
+   IconButton(onClick={vm.reshuffle()}) {Icon(Icons.Rounded.Shuffle,"Shuffle",tint=if(state.shuffle) MaterialTheme.colorScheme.primary else Muted)}
    IconButton(onClick={vm.connection.controller?.repeatMode=when(state.repeat) {0->2;2->1;else->0}}) {Icon(if(state.repeat==1) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,"Repeat",tint=if(state.repeat!=0) MaterialTheme.colorScheme.primary else Muted)}
    IconButton(onClick={vm.connection.controller?.clearMediaItems()}) {Icon(Icons.Rounded.DeleteSweep,"Clear queue")}
   }

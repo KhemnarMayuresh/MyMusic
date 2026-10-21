@@ -23,11 +23,12 @@ The debug APK uses the local Android debug key. Release signing is intentionally
 - Songs, playlists, albums, artists and folders; per-group menus, persistent sorting, bulk selection/actions, scan filters and reversible hiding.
 - Foreground MediaSession playback, compact/full player, drag-and-drop queue management with edge scrolling, shuffle/repeat, seek, ±10 seconds, speed and Android notification/lock-screen controls.
 - Ordered persistent playlists with duplicate entries, favorites, recently/most-played collections.
-- Plain/LRC lyrics import and editing, timestamp seeking, local artwork and twelve player themes with shared visual previews, theme-specific linear/circular seeking layouts and Apply.
+- Plain/LRC lyrics import and editing, timestamp seeking, local artwork and eighteen built-in player themes with shared visual previews, theme-specific linear/circular seeking layouts and Apply.
 - Real PCM ten-band equalizer, five-band control mode, audio-effect controls, crossfade, gapless mode and sleep timer.
 - Share, ringtone assignment, Android-confirmed deletion, app-local metadata editing and supported MP3 file-tag writing.
 - JSON backup/restore of collections/preferences and a local ZIP music-package transfer flow with size/digest validation.
 - Cover-derived colors and blurred player backgrounds, spinning vinyl/cassette reels, and an audio-energy waveform. Animation follows playback and pauses off screen. Shuffle survives song selection and crossfade transitions.
+- Branded animated intro, eight library palettes and saved custom player themes with layout, gradient/accent colors, visual color picker and live preview. Queue/player shuffle buttons generate a fresh visible order while preserving the playing occurrence and position.
 - Classic, Lite and Vinyl home-screen playback widgets with real layout previews. No ads, purchases, premium locks, accounts, analytics or internet permission.
 
 Grant audio-library access when prompted, or open an audio file with this app. Add audio through your device's normal file manager and use Scan music. File edits/deletion require Android consent where applicable. MP3 tag writes preserve an original-file backup under Backup & restore → Original file backups.
@@ -42,7 +43,7 @@ Grant audio-library access when prompted, or open an audio file with this app. A
 
 Create original WAV/LRC fixtures with `analysis/scripts/New-AudioFixtures.ps1`. Device tests expect the generated `Dawn`, `Night`, and `Dawn reprise` WAVs under a dedicated music folder and indexed by MediaStore. The physical MP3-tag test copies an available MP3 to an app-owned temporary media entry, validates it, and deletes only the temporary copy. It is skipped when no MP3 fixture is available. The user's existing MP3 is read without modification. Tests remove their own temporary collections and transfer files. Gradle instrumentation uses a disposable app installation and removes it after the run; use a dedicated emulator and install the APK separately afterward. Source music files are preserved.
 
-Executed: 28 JVM tests and 22 API37 emulator tests passed, with zero skipped tests. Android lint passed with zero errors and 69 warnings. The APK is installed in the virtual device. See [verification](analysis/VERIFICATION.md), [parity coverage](analysis/PARITY.md) and [reference findings](analysis/FINDINGS.md) for evidence and limitations. A build or screenshot alone does not establish functional parity.
+Executed: 30 JVM tests and 24 API37 emulator tests passed, with zero skipped tests. Android lint passed with zero errors and 69 warnings. The APK is installed in the virtual device. See [verification](analysis/VERIFICATION.md), [parity coverage](analysis/PARITY.md) and [reference findings](analysis/FINDINGS.md) for evidence and limitations. A build or screenshot alone does not establish functional parity.
 
 ## Compatibility and remaining reference gaps
 
@@ -62,3 +63,5 @@ UI corrections and reference comparison: [2026-10-19 revision notes](analysis/RE
 Icon and seeking corrections: [2026-10-19 theme progress notes](analysis/THEME-PROGRESS-2026-10-19.md).
 
 Shuffle and visual corrections: [2026-10-19 playback visual notes](analysis/SHUFFLE-VISUALS-2026-10-19.md).
+
+Reshuffle, intro and custom themes: [2026-10-21 revision notes](analysis/RESHUFFLE-INTRO-THEMES-2026-10-21.md).

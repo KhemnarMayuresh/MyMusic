@@ -56,12 +56,28 @@ class PlaybackService: MediaSessionService() {
             override fun onConnect(session: MediaSession,controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
                 if(controller.packageName!=packageName && !controller.isTrusted) return MediaSession.ConnectionResult.reject()
                 val commands=MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
-                if(controller.packageName==packageName) listOf("timer.start","timer.cancel").forEach { commands.add(SessionCommand(it,Bundle.EMPTY)) }
+                if(controller.packageName==packageName) listOf("timer.start","timer.cancel","queue.reshuffle").forEach { commands.add(SessionCommand(it,Bundle.EMPTY)) }
                 return MediaSession.ConnectionResult.AcceptedResultBuilder(session).setAvailableSessionCommands(commands.build()).build()
             }
             override fun onCustomCommand(session: MediaSession,controller: MediaSession.ControllerInfo,command: SessionCommand,args: Bundle): ListenableFuture<SessionResult> {
                 if(controller.packageName!=packageName) return Futures.immediateFuture(SessionResult(SessionError.ERROR_PERMISSION_DENIED))
                 when(command.customAction) {
+                    "queue.reshuffle" -> {
+                        if(player.mediaItemCount>1) {
+                            val resumeAfterShuffle=gapResume?.isActive==true
+                            transition.cancel();cancelGapResume()
+                            val current=player.currentMediaItemIndex
+                            val rest=(0 until player.mediaItemCount).filter {it!=current}.map(player::getMediaItemAt)
+                            var shuffled=rest.shuffled()
+                            if(shuffled==rest && rest.size>1) shuffled=rest.drop(1)+rest.first()
+                            // Move the existing playing source; replacing only other sources keeps its decoder/position.
+                            player.shuffleModeEnabled=false
+                            if(current>0) player.moveMediaItem(current,0)
+                            player.replaceMediaItems(1,player.mediaItemCount,shuffled)
+                            if(resumeAfterShuffle && player.playbackSuppressionReason==Player.PLAYBACK_SUPPRESSION_REASON_NONE) player.play()
+                            queueStore.save(player)
+                        }
+                    }
                     "timer.start" -> {
                         val duration=args.getLong("duration")
                         if(duration !in 1000..86_400_000) return Futures.immediateFuture(SessionResult(SessionError.ERROR_BAD_VALUE))

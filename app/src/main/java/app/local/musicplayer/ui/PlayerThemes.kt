@@ -1,6 +1,6 @@
 package app.local.musicplayer.ui
 
-data class PlayerTheme(val name:String,val style:Int,val top:Long,val bottom:Long,val accent:Long) { val layout:PlayerLayout get()=when(style) {0,9->PlayerLayout.INLINE_ACTIONS;3->PlayerLayout.RING;6->PlayerLayout.LIGHT_PANEL;7->PlayerLayout.HEADER_PROGRESS;8,10->PlayerLayout.IMMERSIVE;else->PlayerLayout.STANDARD} }
+data class PlayerTheme(val name:String,val style:Int,val top:Long,val bottom:Long,val accent:Long,val id:String=name,val coverColors:Boolean=true) { val layout:PlayerLayout get()=when(style) {0,9,17->PlayerLayout.INLINE_ACTIONS;3->PlayerLayout.RING;6,13->PlayerLayout.LIGHT_PANEL;7,16->PlayerLayout.HEADER_PROGRESS;8,10->PlayerLayout.IMMERSIVE;else->PlayerLayout.STANDARD} }
 object PlayerThemes {
  val all=listOf(
   PlayerTheme("Artwork",0,0xFF090B22,0xFF35134D,0xFFFFBF00),
@@ -14,6 +14,13 @@ object PlayerThemes {
   PlayerTheme("Sunset",8,0xFF471836,0xFFCF695B,0xFFFFDB9A),
   PlayerTheme("Glass",9,0xFF103046,0xFF3B7C94,0xFFB2E6FF),
   PlayerTheme("Aurora",10,0xFF081D33,0xFF286A58,0xFF9AFFCD),
-  PlayerTheme("Retro",11,0xFF352542,0xFF705268,0xFFFFBDA7))
- fun find(name:String)=all.find {it.name==name} ?: all.first()
+  PlayerTheme("Retro",11,0xFF352542,0xFF705268,0xFFFFBDA7),
+  PlayerTheme("Prism",12,0xFF170C37,0xFF593271,0xFFFFC875),
+  PlayerTheme("Frost",13,0xFF11263A,0xFF456879,0xFFAEE8FF),
+  PlayerTheme("Duotone",14,0xFF281039,0xFF803A61,0xFFFFB6C9),
+  PlayerTheme("Pulse",15,0xFF071E20,0xFF114D46,0xFF73F5D0),
+  PlayerTheme("Film",16,0xFF21170E,0xFF5B4838,0xFFFFD399),
+  PlayerTheme("Halo",17,0xFF121032,0xFF393672,0xFFC8BBFF))
+ fun options(raw:String="")=all+CustomThemes.decode(raw)
+ fun find(name:String,raw:String="")=options(raw).find {it.id==name} ?: all.first()
 }

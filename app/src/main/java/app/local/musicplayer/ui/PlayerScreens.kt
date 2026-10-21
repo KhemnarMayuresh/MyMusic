@@ -46,8 +46,8 @@ import app.local.musicplayer.playback.PlaybackSnapshot
  val actions=PlayerActions(
   seek={value->if(controller?.currentMediaItem?.mediaId==state.current?.mediaId) controller?.seekTo(value)},
   toggle={controller?.let {if(it.isPlaying) it.pause() else it.play()}},previous={controller?.seekToPrevious()},next={controller?.seekToNextMediaItem()},back={controller?.seekBack()},forward={controller?.seekForward()},
-  shuffle={controller?.shuffleModeEnabled=!state.shuffle},repeat={controller?.repeatMode=when(state.repeat) {0->2;2->1;else->0}},favorite={current?.let(vm::favorite)},playlist=onPlaylist,equalizer=onEqualizer,timer=onTimer,queue=onQueue)
- PlayerSurface(PlayerThemes.find(settings.pref("player_theme","Artwork")),artwork ?: current?.artworkUri,Modifier.fillMaxSize()) {theme->
+  shuffle={vm.reshuffle()},repeat={controller?.repeatMode=when(state.repeat) {0->2;2->1;else->0}},favorite={current?.let(vm::favorite)},playlist=onPlaylist,equalizer=onEqualizer,timer=onTimer,queue=onQueue)
+ PlayerSurface(PlayerThemes.find(settings.pref("player_theme","Artwork"),settings.pref(CustomThemes.KEY)),artwork ?: current?.artworkUri,Modifier.fillMaxSize()) {theme->
  Column(Modifier.fillMaxSize().padding(horizontal=12.dp)) {
   Row(Modifier.fillMaxWidth().height(60.dp),verticalAlignment=Alignment.CenterVertically) {
    IconButton(onClick=onBack) {Icon(Icons.Rounded.KeyboardArrowDown,"Collapse player")};Spacer(Modifier.weight(1f))

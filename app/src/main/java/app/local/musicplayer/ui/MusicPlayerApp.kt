@@ -121,9 +121,9 @@ import org.json.JSONObject
         restore=withContext(Dispatchers.IO) {context.contentResolver.openInputStream(uri)?.use {BackupCodec.decode(it.readBounded(BackupCodec.MAX_BYTES).toString(Charsets.UTF_8))} ?: error("Unable to read backup")}
     }}
     MusicTheme(data.pref("theme","Midnight")) {
-        val gradient=when(data.pref("theme")) {"Obsidian"->listOf(Color(0xFF080808),Color(0xFF19191D));"Ocean"->listOf(Color(0xFF061824),Color(0xFF123B45));"Sunset"->listOf(Color(0xFF261125),Color(0xFF472735));else->listOf(Ink,Color(0xFF17103F),Color(0xFF35134D))}
-        val playerTheme=PlayerThemes.find(data.pref("player_theme","Artwork"))
-        val playerCover=rememberCover(if(route=="player") playingArtwork else null)
+        val gradient=LibraryThemes.find(data.pref("theme","Midnight")).colors.map {Color(it)}
+        val playerTheme=PlayerThemes.find(data.pref("player_theme","Artwork"),data.pref(CustomThemes.KEY))
+        val playerCover=rememberCover(if(route=="player" && playerTheme.coverColors) playingArtwork else null)
         val background=if(route=="player") playerCover?.let {listOf(Color(it.colors[0]),Color(it.colors[1]))} ?: listOf(Color(playerTheme.top),Color(playerTheme.bottom)) else gradient
         ModalNavigationDrawer(drawerState=drawer,drawerContent={ModalDrawerSheet(drawerContainerColor=Ink,modifier=Modifier.width(300.dp)) {
             Column(Modifier.verticalScroll(rememberScrollState()).statusBarsPadding()) {

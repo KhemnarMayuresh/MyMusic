@@ -1,6 +1,7 @@
 <resources>
     <style name="BaseAppTheme" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">@drawable/launch_background</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">#080B24</item>
         <item name="android:navigationBarColor">#080B24</item>

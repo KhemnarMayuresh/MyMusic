@@ -53,6 +53,7 @@ class PlayerViewModel(application: Application): AndroidViewModel(application) {
     fun pref(key: String,value: String) { work { repository.setPreference(key,value) } }
     fun favorite(track: Track) { work { repository.setFavorite(track.id.uri,track.id.uri !in collections.value.favorites) } }
     fun play(list: List<Track>,start: Int=0,shuffle: Boolean?=null) { try { connection.play(list,start,shuffle) } catch(e: Exception) { message.value=e.message } }
+    fun reshuffle() {if((connection.controller?.mediaItemCount ?: 0)<3) message.value="Add at least three songs to reshuffle upcoming music" else connection.reshuffle()}
     fun enqueue(list: List<Track>,next: Boolean=false) { try { connection.add(list,next); message.value=if(next) "Playing next" else "Added to queue" } catch(e: Exception) { message.value=e.message } }
     fun openExternal(uri: Uri) { work {
         val track=withContext(Dispatchers.IO) {

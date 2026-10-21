@@ -62,6 +62,7 @@ class PlaybackConnection(context: Context,private val scope: CoroutineScope) {
         .setMediaMetadata(MediaMetadata.Builder().setTitle(track.title).setArtist(track.artist).setAlbumTitle(track.album)
             .setArtworkUri(track.artworkUri?.let(Uri::parse)).setExtras(Bundle().apply { putString("source_uri",track.id.uri); putLong("duration",track.durationMs) }).build()).build()
     fun timer(durationMs: Long,finish: Boolean) { controller?.sendCustomCommand(SessionCommand("timer.start",Bundle.EMPTY),Bundle().apply { putLong("duration",durationMs); putBoolean("finish",finish) }) }
+    fun reshuffle() {controller?.sendCustomCommand(SessionCommand("queue.reshuffle",Bundle.EMPTY),Bundle.EMPTY)}
     fun cancelTimer() { controller?.sendCustomCommand(SessionCommand("timer.cancel",Bundle.EMPTY),Bundle.EMPTY) }
     fun release() { controller?.removeListener(listener); MediaController.releaseFuture(future); controller=null }
 }

@@ -8,13 +8,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
 import androidx.activity.viewModels
 import app.local.musicplayer.ui.MusicPlayerApp
+import app.local.musicplayer.ui.AppIntro
 
 class MainActivity: ComponentActivity() {
     private val model: PlayerViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(statusBarStyle=SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),navigationBarStyle=SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
-        setContent { MusicPlayerApp(model) }
+        setContent { AppIntro {MusicPlayerApp(model)} }
         handle(intent)
     }
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); handle(intent) }

@@ -1,0 +1,8 @@
+<resources>
+ <style name="AppTheme" parent="BaseAppTheme">
+  <item name="android:windowLightNavigationBar">false</item>
+  <item name="android:windowSplashScreenBackground">#210A36</item>
+  <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+  <item name="android:windowSplashScreenAnimationDuration">400</item>
+ </style>
+</resources>

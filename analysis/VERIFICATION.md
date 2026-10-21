@@ -1,4 +1,12 @@
-# Current APK — shuffle and animated cover themes
+# Current APK — reshuffle, branded intro and custom themes
+
+2026-10-21: all 30 JVM tests and 24 API37 emulator tests passed, zero failures/errors/skips. Final full suite/build succeeded in 5m43s; instrumentation report time 320.25s. Actual queue and player shuffle icons were exercised, with preserved current occurrence, position and playback. The intro and custom-theme workflow exercised color picking, atomic save/apply, edit/rename, activity recreation and deletion. See [revision details](RESHUFFLE-INTRO-THEMES-2026-10-21.md).
+
+Native/Compose startup now matches the supplied logo. There are 18 built-in player designs, eight library palettes and persistent custom player themes with visual color controls. Final fresh-process build/lint passed in 5m16s: zero errors, 69 warnings.
+
+Current `MusicPlayer.apk` SHA-256: `4666F5B3EF480C6970F329F1001D08F80EDAB51A300CD60748954BBCF9B9C6EF`. Installed in emulator-5554 after instrumentation cleanup; audio and notification permissions granted. Original source music and logo asset preserved. Sections below are historical snapshots; their APK identities and counts do not describe this build.
+
+# Previous APK — shuffle and animated cover themes
 
 2026-10-19: 28 JVM tests and all 22 API37 emulator tests passed, zero failures/errors/skips. Final suite/build succeeded in 8m02s (instrumentation report: 455.732s). Shuffle survives song selection, explicit Shuffle starts at the first shuffled window, and crossfade preserves its traversal. Shared cover resolution updates the full player and preview, including live cover edits. Blurred cover backgrounds, spinning vinyl/cassette reels and PCM-driven energy waveform are implemented. See [playback visual verification](SHUFFLE-VISUALS-2026-10-19.md) for boundaries and signal timing limitations.
 

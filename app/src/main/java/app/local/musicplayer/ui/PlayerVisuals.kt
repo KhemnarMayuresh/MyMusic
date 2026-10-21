@@ -14,7 +14,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import app.local.musicplayer.playback.PlayerAudioSignal
 
 @Composable internal fun PlayerSurface(base:PlayerTheme,uri:String?,modifier:Modifier=Modifier,content:@Composable (PlayerTheme)->Unit) {
-    val art=rememberCover(uri)
+    val art=rememberCover(if(base.coverColors) uri else null)
     val theme=art?.let {base.copy(top=it.colors[0],bottom=it.colors[1],accent=it.colors[2])} ?: base
     Box(modifier.background(Brush.verticalGradient(listOf(Color(theme.top),Color(theme.bottom))))) {
         art?.let {

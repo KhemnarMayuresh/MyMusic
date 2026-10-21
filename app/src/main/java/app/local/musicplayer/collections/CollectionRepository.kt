@@ -83,7 +83,10 @@ class CollectionRepository(context: Context, databaseName: String="music.db") {
     suspend fun setFavorite(uri: String,value: Boolean)=setMembership("favorites",uri,value)
     suspend fun setHidden(uri: String,value: Boolean)=setMembership("hidden",uri,value)
     private suspend fun setValue(table: String,key: String,value: String) { transaction { db -> db.insertWithOnConflict(table,null,ContentValues().apply { put("key",key); put("value",value) },SQLiteDatabase.CONFLICT_REPLACE) } }
-    suspend fun setPreference(key: String,value: String)=setValue("preferences",key,value)
+    suspend fun setPreferences(values:Map<String,String>) {transaction {db->
+        values.forEach {(key,value)->check(db.insertWithOnConflict("preferences",null,ContentValues().apply {put("key",key);put("value",value)},SQLiteDatabase.CONFLICT_REPLACE)>=0) {"Unable to save preferences"}}
+    }}
+    suspend fun setPreference(key: String,value: String)=setPreferences(mapOf(key to value))
     suspend fun setLyrics(uri: String,text: String) { require(text.length<=1_000_000); setValue("lyrics",uri,text) }
     suspend fun setOverride(uri: String,json: String)=setValue("overrides",uri,json)
     suspend fun recordPlay(uri: String) { transaction { db ->
