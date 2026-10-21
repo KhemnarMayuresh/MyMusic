@@ -27,7 +27,7 @@ The debug APK uses the local Android debug key. Release signing is intentionally
 - Real PCM ten-band equalizer, five-band control mode, audio-effect controls, crossfade, gapless mode and sleep timer.
 - Share, ringtone assignment, Android-confirmed deletion, app-local metadata editing and supported MP3 file-tag writing.
 - JSON backup/restore of collections/preferences and a local ZIP music-package transfer flow with size/digest validation.
-- Cover-derived colors and blurred player backgrounds, spinning vinyl/cassette reels, moving neon borders/filmstrips, and a smooth audio-energy waveform. Animation follows playback and pauses off screen. Shuffle survives song selection and crossfade transitions.
+- Cover-derived colors and blurred player backgrounds, spinning vinyl/cassette reels, moving neon borders and static filmstrip artwork, and a smooth audio-energy waveform. Animation follows playback and pauses off screen. Shuffle survives song selection and crossfade transitions.
 - Branded animated intro, eight library palettes, custom library palettes and saved custom player themes with layout, gradient/accent colors, visual color picker and live preview. Queue/player shuffle buttons generate a fresh visible order while preserving the playing occurrence and position.
 - Classic, Lite and Vinyl home-screen playback widgets with real layout previews. No ads, purchases, premium locks, accounts, analytics or internet permission.
 

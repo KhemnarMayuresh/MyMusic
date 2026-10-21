@@ -1,4 +1,14 @@
-# Current APK — My Music, custom library themes and player revisions
+# Current APK — My Music 1.0.0
+
+2026-10-21: Film is static during playback and no longer starts the animation frame loop. Drawer branding is a single vertically centered row using the supplied logo and My Music title. Version name is 1.0.0, version code 2; Settings reads BuildConfig.VERSION_NAME instead of a hardcoded version.
+
+Executed: 33 JVM tests and the focused API37 playback/visual test passed, no failures/errors/skips. The static-Film assertion first failed against the animated renderer, then passed after the change. Final focused device/unit/build/lint command succeeded in 4m42s; lint has zero errors/fatal issues and 69 warnings. The entire device suite was not rerun for this small revision; earlier broader coverage is recorded below.
+
+Packaged metadata verified with aapt2: My Music, versionName 1.0.0, versionCode 2. Installed and launched in emulator-5554. UI hierarchy verified the drawer logo and text share a center line; screenshot inspected at analysis/evidence/library-revision/drawer-1.0.0.png.
+
+Current `MusicPlayer.apk` SHA-256: `005FC9DCAF2763A4FF837BF39E3BA4C2B9EB53473D4D9F359C1FA19F9992F257`. APK copied from the verified debug build. Sections below are historical snapshots.
+
+# Previous APK — My Music, custom library themes and player revisions
 
 2026-10-21: 33 JVM tests passed, zero errors/failures/skips. Final full emulator run passed 25 of 26 tests; the added visual screenshot check initially sampled Film before pause/visual settling. After correcting test synchronization, its focused rerun passed. Thus all 26 device cases passed across these runs; this is not a claim of one fully green 26-case run. Direct player-return checks cover Playlists, Folders, Albums, Artists and an opened folder. Custom library theme create/reload/edit/delete and the new playback/paused animations were exercised on API37. See [revision details](LIBRARY-PLAYER-REVISION-2026-10-21.md).
 

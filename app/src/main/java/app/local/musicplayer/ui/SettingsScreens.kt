@@ -55,7 +55,7 @@ import app.local.musicplayer.playback.PlaybackSnapshot
             item {ActionRow(Icons.Rounded.Palette,"Skin theme",data.pref("theme","Midnight")) {onNavigate("themes")}}
             item {ActionRow(Icons.Rounded.Widgets,"Widgets","Add playback controls to your home screen") {onNavigate("widgets")}}
             item {Section("About")}
-            item {Text("Music Player 0.1.0\nLocal music. No ads. No purchases.\n\nAudio formats depend on the device decoder. Unavailable media and unsupported effects are reported explicitly.",Modifier.padding(20.dp),color=Muted)}
+            item {Text("My Music ${app.local.musicplayer.BuildConfig.VERSION_NAME}\nLocal music. No ads. No purchases.\n\nAudio formats depend on the device decoder. Unavailable media and unsupported effects are reported explicitly.",Modifier.padding(20.dp),color=Muted)}
         }
     }
 }

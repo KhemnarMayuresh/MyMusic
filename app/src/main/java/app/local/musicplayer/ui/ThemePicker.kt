@@ -25,7 +25,7 @@ import kotlin.math.*
 
 /** The preview and live player deliberately use the same visual renderer. */
 @Composable internal fun PlayerThemeArtwork(theme:PlayerTheme,uri:String?,modifier:Modifier=Modifier,playing:Boolean=false,entry:String?=null) {
- val motion=rememberPlayerMotion(playing && theme.style in listOf(1,2,4,5,15,16,17),entry)
+ val motion=rememberPlayerMotion(playing && theme.style in listOf(1,2,4,5,15,17),entry)
  val accent=Color(theme.accent)
  Box(modifier.then(if(theme.style==1) Modifier.rotate(motion.degrees) else Modifier),contentAlignment=Alignment.Center) {
   when(theme.style) {
@@ -60,7 +60,7 @@ import kotlin.math.*
    11 -> Column(Modifier.fillMaxSize(.9f).background(Color(0xFFE9CCB3),RoundedCornerShape(16.dp)).padding(16.dp)) {Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {Text("FM  88 • 108",color=Color(0xFF44354A),style=MaterialTheme.typography.labelSmall);Icon(Icons.Rounded.Radio,null,tint=Color(0xFF44354A))};Artwork(uri,Modifier.weight(1f).fillMaxWidth().padding(vertical=12.dp));Canvas(Modifier.fillMaxWidth().height(30.dp)) {for(i in 0..14) drawLine(Color(0xFF44354A),Offset(i*size.width/15,0f),Offset(i*size.width/15,size.height),3f)}}
    14 -> {Canvas(Modifier.fillMaxSize()) {drawRoundRect(accent.copy(alpha=.16f),cornerRadius=androidx.compose.ui.geometry.CornerRadius(40f));val p=Path().apply {moveTo(size.width,0f);lineTo(size.width,size.height);lineTo(0f,size.height);close()};drawPath(p,accent.copy(alpha=.4f))};Artwork(uri,Modifier.fillMaxSize(.7f).clip(CircleShape))}
    15 -> {Canvas(Modifier.fillMaxSize()) {val energy=motion.levels.last();for(i in 1..5) drawCircle(accent.copy(alpha=.06f+i*.025f),size.minDimension*(.17f+i*.055f+energy*.025f),style=androidx.compose.ui.graphics.drawscope.Stroke(2f+i))};Artwork(uri,Modifier.fillMaxSize(.58f).clip(CircleShape))}
-   16 -> {Box(Modifier.fillMaxSize(.9f).background(Color(0xFF111111),RoundedCornerShape(8.dp)).padding(horizontal=24.dp,vertical=12.dp)) {Artwork(uri,Modifier.fillMaxSize())};Canvas(Modifier.fillMaxSize(.9f)) {for(i in 0..10) for(x in listOf(size.width*.025f,size.width*.945f)) drawRoundRect(Color.White.copy(alpha=.7f),Offset(x,size.height*((i+motion.degrees/360f*11)%11)/11),Size(size.width*.03f,size.height*.04f),androidx.compose.ui.geometry.CornerRadius(3f))}}
+   16 -> {Box(Modifier.fillMaxSize(.9f).background(Color(0xFF111111),RoundedCornerShape(8.dp)).padding(horizontal=24.dp,vertical=12.dp)) {Artwork(uri,Modifier.fillMaxSize())};Canvas(Modifier.fillMaxSize(.9f)) {for(i in 0..10) for(x in listOf(size.width*.025f,size.width*.945f)) drawRoundRect(Color.White.copy(alpha=.7f),Offset(x,size.height*(i+.2f)/11),Size(size.width*.03f,size.height*.04f),androidx.compose.ui.geometry.CornerRadius(3f))}}
    17 -> {Canvas(Modifier.fillMaxSize()) {for(i in 0..4) drawCircle(accent.copy(alpha=.15f+i*.12f),size.minDimension*(.36f+i*.025f),style=androidx.compose.ui.graphics.drawscope.Stroke(2f));val a=motion.degrees*PI/180;val radius=size.minDimension*.46f;drawCircle(accent,7.dp.toPx(),Offset(center.x+cos(a).toFloat()*radius,center.y+sin(a).toFloat()*radius))};Artwork(uri,Modifier.fillMaxSize(.64f).clip(CircleShape))}
    else -> Artwork(uri,Modifier.fillMaxSize())
   }

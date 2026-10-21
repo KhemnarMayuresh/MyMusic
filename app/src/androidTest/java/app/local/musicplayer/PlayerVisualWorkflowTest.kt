@@ -77,7 +77,10 @@ class PlayerVisualWorkflowTest {
      waitFor {val first=crop();Thread.sleep(350);val second=crop();val same=first.sameAs(second);first.recycle();second.recycle();same}
      val still=crop()
      ins.runOnMainSync {controller.play()}
-     waitFor {val frame=crop();val changed=!still.sameAs(frame);frame.recycle();changed};still.recycle()
+     if(theme=="Film") {
+      Thread.sleep(900);val frame=crop();assertTrue("Film stays static during playback",still.sameAs(frame));frame.recycle()
+     } else waitFor {val frame=crop();val changed=!still.sameAs(frame);frame.recycle();changed}
+     still.recycle()
      ins.runOnMainSync {controller.pause()};Thread.sleep(700)
     }
    }

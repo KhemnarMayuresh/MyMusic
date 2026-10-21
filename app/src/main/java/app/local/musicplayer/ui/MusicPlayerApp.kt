@@ -28,6 +28,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import app.local.musicplayer.R
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.local.musicplayer.PlayerViewModel
@@ -128,8 +132,10 @@ import org.json.JSONObject
         val background=if(route=="player") playerCover?.let {listOf(Color(it.colors[0]),Color(it.colors[1]))} ?: listOf(Color(playerTheme.top),Color(playerTheme.bottom)) else gradient
         ModalNavigationDrawer(drawerState=drawer,drawerContent={ModalDrawerSheet(drawerContainerColor=Ink,modifier=Modifier.width(300.dp)) {
             Column(Modifier.verticalScroll(rememberScrollState()).statusBarsPadding()) {
-                Icon(Icons.Rounded.GraphicEq,null,Modifier.padding(start=24.dp,top=24.dp).size(44.dp),tint=MaterialTheme.colorScheme.primary)
-                Text("My Music",Modifier.padding(24.dp),style=MaterialTheme.typography.headlineMedium)
+                Row(Modifier.fillMaxWidth().padding(horizontal=24.dp,vertical=24.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                    Image(painterResource(R.drawable.brand_icon),"My Music logo",Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)))
+                    Text("My Music",style=MaterialTheme.typography.headlineSmall,maxLines=1)
+                }
                 listOf(Triple("Library","library",Icons.Rounded.LibraryMusic),Triple("Settings","settings",Icons.Rounded.Settings),Triple("Equalizer","equalizer",Icons.Rounded.Tune),Triple("Sleep timer","timer",Icons.Rounded.Alarm),Triple("Skin theme","themes",Icons.Rounded.Palette),Triple("Widgets","widgets",Icons.Rounded.Widgets),Triple("Backup & restore","backup",Icons.Rounded.Backup),Triple("Music transfer","transfer",Icons.Rounded.PhonelinkRing)).forEach { (title,destination,icon)->
                     ActionRow(icon,title) {scope.launch {drawer.close()};if(destination=="timer") dialog="timer" else {route=destination;if(destination=="library") groupKind=""}}
                 }
