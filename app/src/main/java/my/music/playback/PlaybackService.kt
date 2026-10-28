@@ -164,7 +164,7 @@ class PlaybackService: MediaSessionService() {
                 }
                 val settings=app.collections.state.value
                 transition.tick(settings.flag("crossfade") && timer?.finishCurrentTrack!=true,(settings.pref("crossfade_seconds","5").toFloatOrNull() ?: 5f).coerceIn(1f,12f))
-                if(++ticks%10==0 && player.isPlaying) queueStore.save(player)
+                if(++ticks%10==0 && player.isPlaying) {queueStore.save(player);PlayerWidgetProvider.refreshProgress(this@PlaybackService,player)}
             }
         }
     }

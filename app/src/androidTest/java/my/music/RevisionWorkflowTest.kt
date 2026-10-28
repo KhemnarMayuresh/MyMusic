@@ -105,13 +105,23 @@ class RevisionWorkflowTest {
  } @Test fun widgetControlsFitTheirMinimumHeightWithoutClipping() {
   instrumentation.runOnMainSync {
    val density=context.resources.displayMetrics.density
-   listOf(R.layout.player_widget to 64,R.layout.widget_compact to 64,R.layout.widget_artwork to 110).forEach {(layout,heightDp)->
+   listOf(R.layout.player_widget to 64,R.layout.widget_compact to 64,R.layout.widget_artwork to 128).forEach {(layout,heightDp)->
     val root=android.widget.RemoteViews(context.packageName,layout).apply(context,null) as android.view.ViewGroup
-    val width=(320*density).toInt();val height=(heightDp*density).toInt()
+    for(widthDp in listOf(250,320,400)) {
+    val width=(widthDp*density).toInt();val height=(heightDp*density).toInt()
     root.measure(android.view.View.MeasureSpec.makeMeasureSpec(width,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(height,android.view.View.MeasureSpec.EXACTLY));root.layout(0,0,width,height)
     listOf(R.id.widget_play,R.id.widget_previous,R.id.widget_next,R.id.widget_favorite,R.id.widget_queue).forEach {id->
      val child=root.findViewById<android.view.View>(id);val bounds=android.graphics.Rect();child.getDrawingRect(bounds);root.offsetDescendantRectToMyCoords(child,bounds)
-     assertTrue("Widget control clips at minimum height: $layout / $id / $bounds",bounds.top>=0 && bounds.bottom<=height && bounds.left>=0 && bounds.right<=width)
+     assertTrue("Widget control clips at minimum height: $layout / $id / $bounds",bounds.width()>0 && bounds.height()>0 && bounds.top>=0 && bounds.bottom<=height && bounds.left>=0 && bounds.right<=width)
+    }
+    assertEquals(android.view.View.VISIBLE,root.findViewById<android.view.View>(R.id.widget_art).visibility)
+    if(widthDp==320) {
+     val bitmap=android.graphics.Bitmap.createBitmap(width,height,android.graphics.Bitmap.Config.ARGB_8888)
+     root.draw(android.graphics.Canvas(bitmap))
+     val directory=java.io.File(context.getExternalFilesDir(null),"widget-design").apply {mkdirs()}
+     java.io.File(directory,"${context.resources.getResourceEntryName(layout)}.png").outputStream().use {bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)}
+     bitmap.recycle()
+    }
     }
    }
   }

@@ -35,7 +35,7 @@ The debug APK uses the local Android debug key. Release signing is intentionally
 - JSON backup/restore of collections/preferences and a local ZIP music-package transfer flow with size/digest validation.
 - Cover-derived colors and blurred player backgrounds, spinning vinyl/cassette reels, moving neon borders and static filmstrip artwork, and a smooth audio-energy waveform. Animation follows playback and pauses off screen. Shuffle survives song selection and crossfade transitions.
 - Branded animated intro, eight library palettes, custom library palettes and saved custom player themes with layout, gradient/accent colors, visual color picker and live preview. Queue/player shuffle buttons generate a fresh visible order while preserving the playing occurrence and position.
-- Classic, Lite and Vinyl home-screen playback widgets with real layout previews. No ads, purchases, premium locks, accounts, analytics or internet permission.
+- Classic, Lite and Vinyl home-screen playback widgets with shared neon-styled layouts/previews, reference-matched card proportions and padding, cover artwork, gradient playback buttons and a live Vinyl timeline. No ads, purchases, premium locks, accounts, analytics or internet permission.
 
 Grant audio-library access when prompted, or open an audio file with this app. Add audio through your device's normal file manager and use Scan music. File edits/deletion require Android consent where applicable. MP3 tag writes preserve an original-file backup under Backup & restore → Original file backups.
 

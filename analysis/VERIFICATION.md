@@ -1,3 +1,11 @@
+# Current APK — neon widget design update
+
+2026-10-28: matched the user-provided widget reference with shared native layouts/previews for Classic, Lite and Vinyl, proportional preview sizes, consistent padding, gradient backgrounds/play controls, circular/record artwork, outlined favorite and music-list icons. Add widget pills use an explicit visual height. Vinyl shows actual playback position/duration with lightweight five-second partial updates while playing. Details: analysis/WIDGET-DESIGN-2026-10-28.md.
+
+Verification: final assembleDebug/testDebugUnitTest/assembleDebugAndroidTest/lintDebug command succeeded in 5m34s (analysis/widget-design-verified-build.log). Unit reports: 37 tests, zero failures/errors/skips. Lint: zero errors, 80 warnings. The expanded widget geometry emulator test passed, 0.661s, on the final APK (analysis/widget-design-final-device-test.log): all three RemoteViews layouts at 250, 320 and 400dp widths, at their minimum heights; controls remain within bounds and cover artwork is visible. In-app final screenshot visually checked. Add widget on this launcher correctly showed the unsupported-pin fallback. Actual home-screen hosting, playback timeline updates on a bound widget, and older devices were not runtime-verified; full device suite was not rerun for this design update.
+
+APK installed only on emulator-5554; copied to P:\MyMusic\MusicPlayer.apk, debug-signed, SHA-256 `80DF430F8343E1EE18EBB6C4CFBB7F4D5C3ED2DD47D9ACC7260D0FB90C3622E9`. Package/version stay my.music / 1.0.0 (code 2). This is a subsequent main commit; the existing v1.0.0 release tag and its artifact provenance below are preserved. Nothing pushed.
+
 # Final local release — My Music 1.0.0
 
 2026-10-28: release finalized locally on main with annotated tag v1.0.0. Application package my.music, label My Music, version 1.0.0, version code 2. No version bump or production app-code changes for release finalization. Added release notes and ignore rules for IDE state, signing material and Android distribution outputs; committed the existing Gradle parallel-sync preference and portable JDK 25 daemon criteria. No remote was configured and nothing was pushed or published.
