@@ -54,15 +54,25 @@ class PlayerVisualWorkflowTest {
    assertTrue(device.wait(Until.hasObject(By.desc("Collapse player")),30000));waitFor {backgroundHas(true)}
    ins.runOnMainSync {controller.setMediaItem(blue);controller.prepare()};waitFor {backgroundHas(false)}
    val bounds=device.findObject(By.desc("Player layout: STANDARD")).visibleBounds
+   var cropTop=bounds.top+10
+   fun refreshCropRegion() {
+    // Accessibility nodes are transient during layout changes. Snapshot geometry
+    // once per theme, then compare frames without querying moving timeline nodes.
+    waitFor {
+     try {
+      val header=device.findObject(By.desc("Player layout: HEADER_PROGRESS"))
+      val progress=if(header!=null) device.findObject(By.desc("Song progress")) else null
+      if(header!=null && progress==null) false
+      else {cropTop=progress?.visibleBounds?.bottom?.plus(12) ?: (bounds.top+10);true}
+     } catch(_:StaleObjectException) {false}
+    }
+   }
    fun crop():Bitmap {
     val original=shot()
-    // Header-progress layouts put the advancing timeline inside the old crop.
-    // Start below its actual bounds so the assertion measures static artwork only.
-    val header=device.findObject(By.desc("Player layout: HEADER_PROGRESS"))
-    val top=if(header!=null) device.findObject(By.desc("Song progress")).visibleBounds.bottom+12 else bounds.top+10
-    val height=(bounds.height()/2).coerceIn(1,original.height-top)
-    val bitmap=Bitmap.createBitmap(original,30,top,original.width-60,height);original.recycle();return bitmap
+    val height=(bounds.height()/2).coerceIn(1,original.height-cropTop)
+    val bitmap=Bitmap.createBitmap(original,30,cropTop,original.width-60,height);original.recycle();return bitmap
    }
+   refreshCropRegion()
    Thread.sleep(300);val paused=crop();Thread.sleep(400);val pausedAgain=crop();assertTrue("Vinyl stays still while paused",paused.sameAs(pausedAgain));pausedAgain.recycle()
    ins.runOnMainSync {controller.play()}
    waitFor {PlayerAudioSignal.active?.snapshot()?.any {it>.01f}==true}
@@ -71,7 +81,7 @@ class PlayerVisualWorkflowTest {
    waitFor {val stopped=crop();Thread.sleep(350);val stoppedAgain=crop();val same=stopped.sameAs(stoppedAgain);stopped.recycle();stoppedAgain.recycle();same}
    device.executeShellCommand("mkdir -p /sdcard/Download/MusicPlayerTestOutput");device.executeShellCommand("screencap -p /sdcard/Download/MusicPlayerTestOutput/cover-vinyl-blue.png")
    val vinyl=crop()
-   repository.setPreference("player_theme","Cassette")
+   repository.setPreference("player_theme","Cassette");refreshCropRegion()
    waitFor {val frame=crop();val changed=!vinyl.sameAs(frame);frame.recycle();changed};vinyl.recycle()
    val cassette=crop();ins.runOnMainSync {controller.play()}
    waitFor {val frame=crop();val changed=!cassette.sameAs(frame);frame.recycle();changed};cassette.recycle()
@@ -79,7 +89,7 @@ class PlayerVisualWorkflowTest {
    waitFor {val first=crop();Thread.sleep(350);val second=crop();val same=first.sameAs(second);first.recycle();second.recycle();same}
    device.executeShellCommand("screencap -p /sdcard/Download/MusicPlayerTestOutput/cover-cassette-blue.png")
    for(theme in listOf("Neon","Film","Waveform","Minimal")) {
-    repository.setPreference("player_theme",theme);Thread.sleep(700)
+    repository.setPreference("player_theme",theme);Thread.sleep(700);refreshCropRegion()
     device.executeShellCommand("screencap -p /sdcard/Download/MusicPlayerTestOutput/revised-$theme.png")
     if(theme!="Minimal") {
      waitFor {val first=crop();Thread.sleep(350);val second=crop();val same=first.sameAs(second);first.recycle();second.recycle();same}

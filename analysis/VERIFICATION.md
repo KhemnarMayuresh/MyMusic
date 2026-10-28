@@ -1,4 +1,14 @@
-# Current APK — Moto-inspired For you layout
+# Final local release — My Music 1.0.0
+
+2026-10-28: release finalized locally on main with annotated tag v1.0.0. Application package my.music, label My Music, version 1.0.0, version code 2. No version bump or production app-code changes for release finalization. Added release notes and ignore rules for IDE state, signing material and Android distribution outputs; committed the existing Gradle parallel-sync preference and portable JDK 25 daemon criteria. No remote was configured and nothing was pushed or published.
+
+Verification: final Gradle command :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest :app:lintDebug succeeded in 3m13s (analysis/final-release-final-build.log). Unit-test reports contain 37 tests, zero failures/errors/skips; unchanged unit/build tasks were reused by Gradle where up to date. Debug lint reports zero errors and 69 warnings. Release variant also built successfully, producing app/build/outputs/apk/release/app-release-unsigned.apk. This unsigned release variant was not installed for runtime tests; distribution signing remains owner-controlled.
+
+All 30 emulator instrumentation tests passed in one final run, 630.211s, on emulator-5554 (analysis/final-release-suite.log). Earlier release-gate runs each passed 29/30: one exposed a stale accessibility node in the visual crop helper, and another a null carousel handle in the For you scroll helper. Fixed test-only geometry ownership: capture the crop once per theme with bounded stale-node retries; scroll the entire Explore card into view and retain stable carousel coordinates. Existing assertions remain. The final suite includes both corrected cases and all other device workflows. No tests or installations targeted the Moto.
+
+Installable validation APK remains P:\MyMusic\MusicPlayer.apk, debug-signed, SHA-256 `2F053141D1B3CAAF5642CF06B0F8C7305943AE1FEEE3C82793FF28340CD0DD25`; verified identical to the final debug build. aapt2 confirms the same version/package/label in the release APK, with no debuggable flag or INTERNET permission. APKs, keys, local IDE state, build directories and raw captures are excluded from Git. Historical verification details below remain for provenance.
+
+# Previous APK — Moto-inspired For you layout
 
 2026-10-28: inspected the reference app on the authorized Moto g86 power 5G using REA screen captures. Removed the redundant in-page For you heading. Rebuilt the dashboard with a compact Continue row, Shuffle/Play pills, horizontal Top picks cards (Your Hits, Top Album, Top Artist), smaller recent-song covers, colored Explore cards with song footers, and a purple current-month chart. High Quality is first in Explore. Existing requested Before 1980 and current-month semantics are retained. Reference observations and reconstruction choices: analysis/MOTO_FOR_YOU_REFERENCE.md; raw screenshots/Evidence are under ignored analysis/evidence/moto-for-you.
 

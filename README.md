@@ -2,9 +2,13 @@
 
 A native Android player for local audio, implemented in Kotlin, Compose and Media3. Application ID: `my.music`. The original reference app is installed separately and is never replaced.
 
+## Release
+
+Final local release: **1.0.0**, Git tag `v1.0.0`, application ID `my.music`, Android version code `2`. See [release notes](RELEASE_NOTES.md) for validation and signing details. Build outputs and signing keys are excluded from Git.
+
 ## Build and install
 
-Use an existing Android SDK with platform 37 and a compatible JDK (the Android Studio JBR works). Gradle 9.3.1 is pinned and its distribution checksum is verified by the wrapper. Dependencies are pinned in `app/build.gradle.kts`.
+Use an existing Android SDK with platform 37 and JDK 25 (pinned by `gradle/gradle-daemon-jvm.properties`; a matching Android Studio JBR works). Gradle 9.3.1 is pinned and its distribution checksum is verified by the wrapper. Dependencies are pinned in `app/build.gradle.kts`.
 
 On Windows PowerShell:
 

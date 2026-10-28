@@ -8,3 +8,19 @@ analysis/fixtures/
 *.apk
 *.log
 .tools/
+
+# Local IDE and operating-system state
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Local signing material and private signing configuration
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# Android distribution outputs
+*.aab
+*.apks
