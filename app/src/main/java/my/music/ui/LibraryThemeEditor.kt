@@ -33,12 +33,7 @@ import my.music.collections.CollectionState
  }
  androidx.activity.compose.BackHandler(editing) {editing=false}
  Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-  Column(Modifier.fillMaxWidth().height(210.dp).background(Brush.verticalGradient(shown.colors.map {Color(it)}),RoundedCornerShape(18.dp)).padding(20.dp),verticalArrangement=Arrangement.SpaceAround) {
-   Text("My Music",style=MaterialTheme.typography.titleLarge,color=Color.White)
-   Text("Songs   Playlists   Folders",color=Color(shown.accent))
-   Text("Your favorite song",color=Color.White)
-   Text("Music, your way",color=Color(shown.accent))
-  }
+  Box(Modifier.fillMaxWidth().height(100.dp).background(Brush.verticalGradient(shown.colors.map {Color(it)}),RoundedCornerShape(18.dp)))
   if(editing) {
    OutlinedTextField(name,{name=it.take(40)},label={Text("Library theme name")},singleLine=true,modifier=Modifier.fillMaxWidth())
    Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {

@@ -1,4 +1,12 @@
-# Current APK — package my.music
+# Current APK — library theme preview cleanup
+
+2026-10-28: removed the four sample text lines from Themes > Library and reduced the retained gradient preview from 210dp to 100dp. Theme creation/editing, colors and saved selections are unchanged. Package remains my.music, version 1.0.0.
+
+Verification: assembleDebug succeeded in 1m46s and git diff --check passed. No tests or lint rerun for this visual-only text removal; no runtime visual check performed for this revision. Previous broader checks below are historical.
+
+Current MusicPlayer.apk SHA-256: `C21B94E1459DB1C0F84528A3D2BFA644AFB7B8EA7F4460DC8D73C9D5F9A1EB12`. Copied from the successful debug build to P:\MyMusic\MusicPlayer.apk.
+
+# Previous APK — package my.music
 
 2026-10-28: migrated applicationId, namespace, main/test/androidTest Kotlin packages, imports, fully qualified component references and source directories to `my.music`. Active README/plan references updated. Version remains 1.0.0, version code 2, label My Music. Project is now located at P:\MyMusic. User IDE/Gradle configuration changes were preserved.
 
