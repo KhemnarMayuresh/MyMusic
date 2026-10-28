@@ -16,17 +16,21 @@ import java.util.UUID
 data class PlaylistEntry(val id: String, val trackUri: String)
 data class Playlist(val id: String, val name: String, val entries: List<PlaylistEntry>)
 data class PlayRecord(val trackUri: String, val lastPlayed: Long, val count: Int)
+data class RecommendationPlay(val trackUri:String,val lastPlayed:Long,val count:Int)
+data class MonthPlay(val month:String,val trackUri:String,val count:Int)
+
 data class CollectionState(
     val playlists: List<Playlist> = emptyList(), val favorites: Set<String> = emptySet(), val hidden: Set<String> = emptySet(),
     val lyrics: Map<String,String> = emptyMap(), val preferences: Map<String,String> = emptyMap(),
     val overrides: Map<String,String> = emptyMap(), val history: List<PlayRecord> = emptyList(),
+    val recommendationPlays:List<RecommendationPlay> = emptyList(),val monthPlays:List<MonthPlay> = emptyList(),
 ) {
     fun pref(key: String, default: String="") = preferences[key] ?: default
     fun flag(key: String, default: Boolean=false) = preferences[key]?.toBooleanStrictOrNull() ?: default
 }
 
 class CollectionRepository(context: Context, databaseName: String="music.db") {
-    private val helper=object: SQLiteOpenHelper(context.applicationContext,databaseName,null,1) {
+    private val helper=object: SQLiteOpenHelper(context.applicationContext,databaseName,null,2) {
         override fun onConfigure(db: SQLiteDatabase) { db.setForeignKeyConstraintsEnabled(true) }
         override fun onCreate(db: SQLiteDatabase) {
             db.execSQL("CREATE TABLE playlists(id TEXT PRIMARY KEY,name TEXT NOT NULL,created INTEGER NOT NULL)")
@@ -34,8 +38,16 @@ class CollectionRepository(context: Context, databaseName: String="music.db") {
             listOf("favorites","hidden").forEach { db.execSQL("CREATE TABLE $it(uri TEXT PRIMARY KEY)") }
             listOf("lyrics","preferences","overrides").forEach { db.execSQL("CREATE TABLE $it(key TEXT PRIMARY KEY,value TEXT NOT NULL)") }
             db.execSQL("CREATE TABLE history(uri TEXT PRIMARY KEY,last_played INTEGER NOT NULL,count INTEGER NOT NULL)")
+            createRecommendations(db)
         }
-        override fun onUpgrade(db: SQLiteDatabase,oldVersion: Int,newVersion: Int) { error("Unsupported database migration") }
+        override fun onUpgrade(db: SQLiteDatabase,oldVersion: Int,newVersion: Int) {
+            require(oldVersion==1 && newVersion==2) {"Unsupported database migration"}
+            createRecommendations(db)
+        }
+    }
+    private fun createRecommendations(db:SQLiteDatabase) {
+        db.execSQL("CREATE TABLE recommendation_plays(uri TEXT PRIMARY KEY,last_played INTEGER NOT NULL,count INTEGER NOT NULL)")
+        db.execSQL("CREATE TABLE recommendation_months(month TEXT NOT NULL,uri TEXT NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(month,uri))")
     }
     private val lock=Mutex()
     private val mutable=MutableStateFlow(CollectionState())
@@ -47,7 +59,9 @@ class CollectionRepository(context: Context, databaseName: String="music.db") {
         val entries=db.rawQuery("SELECT id,playlist,uri FROM entries ORDER BY position",null).use { c -> buildList { while(c.moveToNext()) add(c.getString(1) to PlaylistEntry(c.getString(0),c.getString(2))) } }.groupBy({it.first},{it.second})
         val lists=db.rawQuery("SELECT id,name FROM playlists ORDER BY created,id",null).use { c -> buildList { while(c.moveToNext()) add(Playlist(c.getString(0),c.getString(1),entries[c.getString(0)] ?: emptyList())) } }
         val history=db.rawQuery("SELECT uri,last_played,count FROM history ORDER BY last_played DESC",null).use { c -> buildList { while(c.moveToNext()) add(PlayRecord(c.getString(0),c.getLong(1),c.getInt(2))) } }
-        return CollectionState(lists,values("favorites"),values("hidden"),map("lyrics"),map("preferences"),map("overrides"),history)
+        val recommendations=db.rawQuery("SELECT uri,last_played,count FROM recommendation_plays ORDER BY last_played DESC,uri",null).use {c->buildList {while(c.moveToNext()) add(RecommendationPlay(c.getString(0),c.getLong(1),c.getInt(2)))}}
+        val months=db.rawQuery("SELECT month,uri,count FROM recommendation_months ORDER BY month,uri",null).use {c->buildList {while(c.moveToNext()) add(MonthPlay(c.getString(0),c.getString(1),c.getInt(2)))}}
+        return CollectionState(lists,values("favorites"),values("hidden"),map("lyrics"),map("preferences"),map("overrides"),history,recommendations,months)
     }
     private suspend fun <T> transaction(block: (SQLiteDatabase)->T): T = withContext(Dispatchers.IO) {
         lock.withLock {
@@ -89,10 +103,20 @@ class CollectionRepository(context: Context, databaseName: String="music.db") {
     suspend fun setPreference(key: String,value: String)=setPreferences(mapOf(key to value))
     suspend fun setLyrics(uri: String,text: String) { require(text.length<=1_000_000); setValue("lyrics",uri,text) }
     suspend fun setOverride(uri: String,json: String)=setValue("overrides",uri,json)
-    suspend fun recordPlay(uri: String) { transaction { db ->
+    suspend fun recordPlay(uri: String,at:Long=System.currentTimeMillis()) { transaction { db ->
         val count=db.rawQuery("SELECT count FROM history WHERE uri=?",arrayOf(uri)).use {if(it.moveToFirst()) it.getInt(0) else 0}
-        db.insertWithOnConflict("history",null,ContentValues().apply {put("uri",uri);put("last_played",System.currentTimeMillis());put("count",count+1)},SQLiteDatabase.CONFLICT_REPLACE)
+        db.insertWithOnConflict("history",null,ContentValues().apply {put("uri",uri);put("last_played",at);put("count",count+1)},SQLiteDatabase.CONFLICT_REPLACE)
+        // Check the persisted preference while holding the same lock as toggle/cleanup writes.
+        val enabled=db.rawQuery("SELECT value FROM preferences WHERE key='for_you_enabled'",null).use {if(it.moveToFirst()) it.getString(0).toBooleanStrictOrNull() ?: true else true}
+        if(enabled) {
+            val month=java.text.SimpleDateFormat("yyyy-MM",java.util.Locale.US).format(java.util.Date(at))
+            db.execSQL("INSERT OR IGNORE INTO recommendation_plays VALUES (?, ?, 0)",arrayOf(uri,at))
+            db.execSQL("UPDATE recommendation_plays SET last_played=?,count=count+1 WHERE uri=?",arrayOf(at,uri))
+            db.execSQL("INSERT OR IGNORE INTO recommendation_months VALUES (?, ?, 0)",arrayOf(month,uri))
+            db.execSQL("UPDATE recommendation_months SET count=count+1 WHERE month=? AND uri=?",arrayOf(month,uri))
+        }
     } }
+    suspend fun clearRecommendations() {transaction {db->db.delete("recommendation_plays",null,null);db.delete("recommendation_months",null,null)}}
     suspend fun export(): BackupData=withContext(Dispatchers.IO) { lock.withLock {
         val s=read(helper.readableDatabase)
         BackupData(s.playlists.map { BackupPlaylist(it.id,it.name,it.entries.map { e->e.trackUri }) },s.favorites,s.hidden,s.lyrics,s.preferences,s.overrides)

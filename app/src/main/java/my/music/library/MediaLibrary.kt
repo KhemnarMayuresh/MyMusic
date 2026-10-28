@@ -32,7 +32,7 @@ class MediaLibrary(private val context: Context) {
         try {
             val uri=MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
             val pathColumn=if(Build.VERSION.SDK_INT>=29) MediaStore.Audio.Media.RELATIVE_PATH else MediaStore.Audio.Media.DATA
-            val columns=arrayOf("_id","title","artist","album","album_id","duration","mime_type","date_added",pathColumn)
+            val columns=arrayOf("_id","title","artist","album","album_id","duration","mime_type","date_added",pathColumn,"year")+if(Build.VERSION.SDK_INT>=30) arrayOf("bitrate") else emptyArray()
             val tracks: List<Track> = context.contentResolver.query(uri,columns,"duration > 0 AND mime_type LIKE ?",arrayOf("audio/%"),"title COLLATE NOCASE ASC")?.use { c ->
                 buildList<Track> {
                     while(c.moveToNext()) {
@@ -42,7 +42,7 @@ class MediaLibrary(private val context: Context) {
                         val folder=if(Build.VERSION.SDK_INT>=29) path.trimEnd('/') else path.substringBeforeLast('/',"")
                         add(Track(TrackId(ContentUris.withAppendedId(uri,id).toString()),c.getString(1)?.takeIf { it.isNotBlank() } ?: "Untitled",
                             c.getString(2)?.takeUnless { it.isBlank() || it=="<unknown>" } ?: "Unknown artist",c.getString(3)?.takeUnless { it.isBlank() || it=="<unknown>" } ?: "Unknown album",
-                            albumId,folder,c.getLong(5),c.getString(6),c.getLong(7),albumId?.takeIf { it>0 }?.let { "content://media/external/audio/albumart/$it" }))
+                            albumId,folder,c.getLong(5),c.getString(6),c.getLong(7),albumId?.takeIf { it>0 }?.let { "content://media/external/audio/albumart/$it" },if(c.isNull(9)) null else c.getInt(9).takeIf {it>0},if(Build.VERSION.SDK_INT>=30 && !c.isNull(10)) c.getInt(10).takeIf {it>0} else null))
                     }
                 }
             } ?: throw java.io.IOException("Media library is temporarily unavailable")

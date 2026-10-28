@@ -62,6 +62,9 @@ import org.json.JSONObject
     var libraryTab by rememberSaveable {mutableStateOf("Songs")}
     var route by rememberSaveable {mutableStateOf("library")}
     var groupKind by rememberSaveable {mutableStateOf("")};var groupKey by rememberSaveable {mutableStateOf("")};var groupTitle by rememberSaveable {mutableStateOf("")}
+    LaunchedEffect(data.flag("for_you_enabled",true)) {
+        if(!data.flag("for_you_enabled",true)) {if(libraryTab=="For you") libraryTab="Songs";if(groupKind=="recommendation") groupKind=""}
+    }
     val group=if(groupKind.isEmpty()) null else BrowserGroup(groupKind,groupKey,groupTitle)
     var dialog by remember {mutableStateOf<String?>(null)}
     var actionTrack by remember {mutableStateOf<Track?>(null)}

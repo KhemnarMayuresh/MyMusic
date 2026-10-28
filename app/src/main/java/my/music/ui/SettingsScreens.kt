@@ -30,6 +30,7 @@ import my.music.playback.PlaybackSnapshot
 }
 @Composable fun SettingsScreen(vm: PlayerViewModel,data: CollectionState,onBack: ()->Unit,onNavigate: (String)->Unit) {
     val context=LocalContext.current
+    var clearRecommendations by remember {mutableStateOf(false)}
     Column {
         Header("Settings",onBack)
         LazyColumn {
@@ -49,6 +50,8 @@ import my.music.playback.PlaybackSnapshot
             item {PreferenceToggle("Pause on detach","Pause when headphones are disconnected",data.flag("pause_detach",true)) {vm.pref("pause_detach",it.toString())}}
             item {ActionRow(Icons.Rounded.BatteryChargingFull,"Background playback","Open Android app settings for battery and notification controls") {context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:${context.packageName}")))}}
             item {Section("Preference")}
+            item {PreferenceToggle("For you","Show recommendations and track plays for this section. Turning this off keeps saved recommendation data.",data.flag("for_you_enabled",true)) {vm.pref("for_you_enabled",it.toString())}}
+            item {ActionRow(Icons.Rounded.DeleteOutline,"Clear recommendation data","Delete For you counters and monthly charts. Songs, playlists and existing Recently Played history are kept.") {clearRecommendations=true}}
             item {PreferenceToggle("Keep screen on","Stay awake while the full player is open",data.flag("keep_screen")) {vm.pref("keep_screen",it.toString())}}
             item {PreferenceToggle("Lock screen playing","Show the player over the lock screen when opened during playback",data.flag("lock_screen",true)) {vm.pref("lock_screen",it.toString())}}
             item {ActionRow(Icons.Rounded.Notifications,"Notifications","Android manages media and lock-screen controls") {val intent=if(android.os.Build.VERSION.SDK_INT>=26) Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,context.packageName) else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:${context.packageName}"));context.startActivity(intent)}}
@@ -58,6 +61,7 @@ import my.music.playback.PlaybackSnapshot
             item {Text("My Music ${my.music.BuildConfig.VERSION_NAME}\nLocal music. No ads. No purchases.\n\nAudio formats depend on the device decoder. Unavailable media and unsupported effects are reported explicitly.",Modifier.padding(20.dp),color=Muted)}
         }
     }
+    if(clearRecommendations) AlertDialog(onDismissRequest={clearRecommendations=false},title={Text("Clear recommendation data?")},text={Text("Delete saved For you listening counters and monthly charts? Your music, playlists and existing Recently Played history will be kept. Tracking will continue only if For you is enabled.")},confirmButton={TextButton(onClick={clearRecommendations=false;vm.work {vm.repository.clearRecommendations();vm.message.value="Recommendation data cleared"}}) {Text("Clear data")}},dismissButton={TextButton(onClick={clearRecommendations=false}) {Text("Cancel")}})
 }
 @Composable fun ScanScreen(vm: PlayerViewModel,data: CollectionState,onBack: ()->Unit,onPermission: ()->Unit) {
     var seconds by remember(data.pref("min_duration")) {mutableStateOf(data.pref("min_duration","0"))}

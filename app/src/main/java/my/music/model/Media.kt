@@ -5,6 +5,7 @@ data class Track(
     val id: TrackId, val title: String, val artist: String, val album: String,
     val albumId: Long?, val folder: String, val durationMs: Long,
     val mimeType: String?, val dateAddedSeconds: Long, val artworkUri: String?,
+    val year:Int?=null,val bitrate:Int?=null,
 )
 data class QueueEntry(val entryId: String, val trackId: TrackId)
 sealed interface OperationResult<out T> {

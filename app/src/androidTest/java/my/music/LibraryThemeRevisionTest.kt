@@ -53,8 +53,9 @@ class LibraryThemeRevisionTest {
   }
   try {
    ins.runOnMainSync {controller.pause();controller.setMediaItem(androidx.media3.common.MediaItem.Builder().setMediaId("navigation-fixture").setUri(tracks.first().id.uri).setMediaMetadata(androidx.media3.common.MediaMetadata.Builder().setTitle("Navigation fixture").build()).build());controller.prepare()}
+   val tabY=d.findObject(By.text("Songs")).visibleBounds.centerY()
    for((tab,marker) in listOf("Playlists" to "New playlist","Folders" to "Sort folders","Albums" to "Sort albums","Artists" to "Sort artists")) {
-    if(!d.hasObject(By.text(tab))) d.swipe(d.displayWidth*9/10,200,d.displayWidth/10,200,20)
+    if(!d.hasObject(By.text(tab))) d.swipe(d.displayWidth*9/10,tabY,d.displayWidth/10,tabY,30)
     click(tab);playerBack()
     assertTrue("Restore $tab",d.wait(Until.hasObject(if(tab=="Playlists") By.text(marker) else By.desc(marker)),10000))
    }

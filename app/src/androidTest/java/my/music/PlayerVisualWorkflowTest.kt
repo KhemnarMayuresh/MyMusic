@@ -54,7 +54,15 @@ class PlayerVisualWorkflowTest {
    assertTrue(device.wait(Until.hasObject(By.desc("Collapse player")),30000));waitFor {backgroundHas(true)}
    ins.runOnMainSync {controller.setMediaItem(blue);controller.prepare()};waitFor {backgroundHas(false)}
    val bounds=device.findObject(By.desc("Player layout: STANDARD")).visibleBounds
-   fun crop():Bitmap {val original=shot();val bitmap=Bitmap.createBitmap(original,30,bounds.top+10,original.width-60,(bounds.height()/2).coerceAtLeast(1));original.recycle();return bitmap}
+   fun crop():Bitmap {
+    val original=shot()
+    // Header-progress layouts put the advancing timeline inside the old crop.
+    // Start below its actual bounds so the assertion measures static artwork only.
+    val header=device.findObject(By.desc("Player layout: HEADER_PROGRESS"))
+    val top=if(header!=null) device.findObject(By.desc("Song progress")).visibleBounds.bottom+12 else bounds.top+10
+    val height=(bounds.height()/2).coerceIn(1,original.height-top)
+    val bitmap=Bitmap.createBitmap(original,30,top,original.width-60,height);original.recycle();return bitmap
+   }
    Thread.sleep(300);val paused=crop();Thread.sleep(400);val pausedAgain=crop();assertTrue("Vinyl stays still while paused",paused.sameAs(pausedAgain));pausedAgain.recycle()
    ins.runOnMainSync {controller.play()}
    waitFor {PlayerAudioSignal.active?.snapshot()?.any {it>.01f}==true}

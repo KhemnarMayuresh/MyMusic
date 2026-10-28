@@ -60,6 +60,7 @@ class RevisionWorkflowTest {
   val menu=device.findObjects(By.descStartsWith("folder actions:")).first();menu.click();assertTrue(device.wait(Until.hasObject(By.text("Hide folder")),30000))
   listOf("Play","Play next","Add to queue","Add to playlist","Hide folder").forEach {assertTrue(device.hasObject(By.text(it)))}
   device.pressBack();assertTrue(device.wait(Until.hasObject(By.desc("Select folders")),30000));device.findObject(By.desc("Select folders")).click();text("Delete");assertTrue(device.hasObject(By.text("Delete selected music?")));text("Cancel")
+  if(!device.hasObject(By.text("Albums"))) {val tabY=device.findObject(By.text("Folders")).visibleBounds.centerY();device.swipe(device.displayWidth*9/10,tabY,device.displayWidth/10,tabY,30)}
   text("Albums");assertTrue(device.wait(Until.hasObject(By.desc("Sort albums")),30000));assertTrue(device.wait(Until.hasObject(By.descStartsWith("album actions:")),30000))
  }
  @Test fun themePreviewAppliesAndThreeWidgetProvidersExist():Unit=runBlocking {

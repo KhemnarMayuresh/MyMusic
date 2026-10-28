@@ -58,7 +58,14 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
     var sortMenu by remember { mutableStateOf(false) }
     var selection by remember { mutableStateOf(setOf<String>()) }
     val sort=data.pref("sort","Title A–Z")
+    val recommendationDay=rememberRecommendationDay()
+    val needsMixes=data.flag("for_you_enabled",true) && (tab=="For you" || group?.kind=="recommendation")
+    val mixes=remember(tracks,data.recommendationPlays,data.monthPlays,data.favorites,recommendationDay,needsMixes) {if(needsMixes) my.music.library.Recommendations.build(tracks,data.recommendationPlays,data.monthPlays,recommendationDay,data.favorites) else emptyMap()}
+    val tabs=if(data.flag("for_you_enabled",true)) listOf("For you","Songs","Playlists","Folders","Albums","Artists") else listOf("Songs","Playlists","Folders","Albums","Artists")
+    val activeTab=tab.takeIf {it in tabs} ?: "Songs"
+    LaunchedEffect(activeTab,tab) {if(activeTab!=tab) onTab(activeTab)}
     val groupTracks=when(group?.kind) {
+        "recommendation"->mixes[group.key].orEmpty()
         "folder"->tracks.filter { it.folder==group.key }
         "album"->tracks.filter { (it.albumId?.toString() ?: it.album)==group.key }
         "artist"->tracks.filter { it.artist==group.key }
@@ -67,7 +74,7 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
         "most"->data.history.sortedByDescending { it.count }.mapNotNull { record->tracks.find { it.id.uri==record.trackUri } }
         else->tracks
     }
-    val ranked=group?.kind in listOf("recent","most")
+    val ranked=group?.kind in listOf("recent","most","recommendation")
     val displayed=remember(groupTracks,query,sort,ranked) { LibraryQuery.browse(groupTracks,query,if(ranked) null else sort) }
     Column(Modifier.fillMaxSize()) {
         if(group!=null) Header(group.title,onBack) else Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically) {
@@ -80,8 +87,8 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
         if(searching || group!=null) {
             OutlinedTextField(query,{query=it},Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=4.dp),singleLine=true,placeholder={Text("Search songs, artists, albums")},leadingIcon={Icon(Icons.Rounded.Search,null)},shape=RoundedCornerShape(24.dp))
         }
-        if(group==null && !searching) ScrollableTabRow(selectedTabIndex=listOf("Songs","Playlists","Folders","Albums","Artists").indexOf(tab),containerColor=Color.Transparent,edgePadding=8.dp,divider={}) {
-            listOf("Songs","Playlists","Folders","Albums","Artists").forEach { label -> Tab(selected=tab==label,onClick={onTab(label);selection=emptySet()},text={Text(label,fontWeight=if(tab==label) FontWeight.Bold else FontWeight.Normal,style=MaterialTheme.typography.titleLarge)}) }
+        if(group==null && !searching) ScrollableTabRow(selectedTabIndex=tabs.indexOf(activeTab),containerColor=Color.Transparent,edgePadding=8.dp,divider={}) {
+            tabs.forEach { label -> Tab(selected=activeTab==label,onClick={onTab(label);selection=emptySet()},text={Text(label,fontWeight=if(activeTab==label) FontWeight.Bold else FontWeight.Normal,style=MaterialTheme.typography.titleLarge)}) }
         }
         if(libraryState is LibraryState.PermissionRequired) {
             EmptyLibrary("Your music, on your device","Allow audio access to discover your songs.","Allow audio access",onPermission)
@@ -89,7 +96,9 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
             EmptyLibrary("Can't read music",libraryState.failure.message,"Try again",{vm.rescan()})
         } else if(libraryState is LibraryState.Loading && tracks.isEmpty()) {
             Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { CircularProgressIndicator() }
-        } else if(group!=null || tab=="Songs" || searching) {
+        } else if(group==null && activeTab=="For you" && !searching) {
+            ForYouScreen(mixes,recommendationDay,{title->onGroup(BrowserGroup("recommendation",title,title))},{list,index->vm.play(list,index)},Modifier.weight(1f))
+        } else if(group!=null || activeTab=="Songs" || searching) {
             Row(Modifier.fillMaxWidth().padding(start=16.dp,end=8.dp,top=14.dp),verticalAlignment=Alignment.CenterVertically) {
                 Text(if(selection.isEmpty()) "${displayed.size} ${if(displayed.size==1) "Song" else "Songs"}" else "${selection.size} selected",color=Muted,modifier=Modifier.weight(1f))
                 if(!ranked) Box {
@@ -106,11 +115,14 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
                 Button(onClick={vm.play(displayed,shuffle=true)},enabled=displayed.isNotEmpty(),modifier=Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=Color.White,contentColor=Ink)) { Icon(Icons.Rounded.Shuffle,null);Spacer(Modifier.width(8.dp));Text("Shuffle") }
                 Button(onClick={vm.play(displayed)},enabled=displayed.isNotEmpty(),modifier=Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=Color.White,contentColor=Ink)) { Icon(Icons.Rounded.PlayArrow,null);Spacer(Modifier.width(8.dp));Text("Play") }
             }
-            if(displayed.isEmpty()) EmptyLibrary(if(query.isBlank()) "No music yet" else "No matching songs",if(query.isBlank()) "Add local audio files, then scan your music." else "Try another title, artist or album.","Scan music",{vm.rescan()})
+            if(displayed.isEmpty()) {
+                if(group?.kind=="recommendation") EmptyLibrary(if(query.isBlank()) "No songs in this mix yet" else "No matching songs",if(query.isBlank()) my.music.library.Recommendations.emptyReason(group.key) else "Try another title, artist or album.","Back to For you",onBack)
+                else EmptyLibrary(if(query.isBlank()) "No music yet" else "No matching songs",if(query.isBlank()) "Add local audio files, then scan your music." else "Try another title, artist or album.","Scan music",{vm.rescan()})
+            }
             else LazyColumn(Modifier.weight(1f)) { itemsIndexed(displayed,key={index,track->"$index:${track.id.uri}"}) { index,track ->
                 TrackRow(track,playback.current?.mediaMetadata?.extras?.getString("source_uri")==track.id.uri,onClick={if(selection.isEmpty()) vm.play(displayed,index) else selection=if(track.id.uri in selection) selection-track.id.uri else selection+track.id.uri},onMenu={onTrackMenu(track)},onLongClick={selection=selection+track.id.uri},selected=track.id.uri in selection)
             } }
-        } else if(tab=="Playlists") {
+        } else if(activeTab=="Playlists") {
             LazyColumn {
                 item { ActionRow(Icons.Rounded.Favorite,"Favorites","${data.favorites.size} songs") { onGroup(BrowserGroup("favorites","","Favorites")) } }
                 item { ActionRow(Icons.Rounded.History,"Recently played") { onGroup(BrowserGroup("recent","","Recently played")) } }
@@ -119,7 +131,7 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
                 items(data.playlists,key={it.id}) { p -> ActionRow(Icons.Rounded.QueueMusic,p.name,"${p.entries.size} songs") { onGroup(BrowserGroup("playlist",p.id,p.name)) } }
             }
         } else {
-            GroupBrowser(vm,tracks,when(tab) {"Folders"->"folder";"Albums"->"album";else->"artist"},onGroup,onAddSelection,onDeleteSelection)
+            GroupBrowser(vm,tracks,when(activeTab) {"Folders"->"folder";"Albums"->"album";else->"artist"},onGroup,onAddSelection,onDeleteSelection)
         }
     }
 }

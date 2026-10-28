@@ -1,4 +1,16 @@
-# Current APK — library theme preview cleanup
+# Current APK — For you recommendations
+
+2026-10-28: added enabled-by-default For you before Songs; Songs remains the fresh-launch default. Added Top picks, Recently Played, Top Artist mix, Daily discover, Never Played, Before 1980, Before 2000, High Quality and current-month chart. Mixes open existing playable song lists and individual cards start the corresponding queue. Hidden/filtered/unavailable songs are excluded by using the visible library.
+
+Settings > For you hides the tab and stops feature-specific aggregate writes while retaining all saved data. Re-enabling restores the retained counters. Clear recommendation data is a separate confirmation; cancellation preserves records and confirmation deletes recommendation counters/monthly charts only. Existing playlist history stays separate. No automatic pruning. Additive SQLite v1->v2 migration preserves existing collections. Nullable year/bitrate are read from MediaStore; bitrate query is guarded for API30+. Detailed design and plan are in docs/superpowers.
+
+Verification: 36 JVM tests passed, zero failures/errors/skips. All four new emulator cases passed in the full run: v1 migration, retention/disable/reload/cleanup, monthly buckets/concurrent disabled writes, and actual UI default tab/mix playback/switch/confirmed cleanup. Full API37 suite passed 29/30; the sole failure was a pre-existing static Film screenshot assertion whose old crop included the moving progress bar. After excluding the timeline using its actual bounds, the targeted visual rerun passed (52.319s). All 30 device cases therefore passed across these runs; there was not one fully green 30-case run. UI helper fixes use stable captured list bounds and actual tab-row coordinates rather than stale accessibility handles or fixed screen positions.
+
+Final main unit/build/test-APK/lint command passed in 4m36s; final test-build/lint command after test-only corrections passed in 44s. Lint: zero errors/fatal issues, 69 warnings. No production changes followed the full device run. Read-only independent review found no blocking defects; its artist/empty-mix copy refinements were addressed. No tests or installations targeted the physical device.
+
+APK package my.music, version 1.0.0, version code 2. Final APK copied, installed in emulator-5554 and launched to Songs. Current MusicPlayer.apk SHA-256: `823E5CC21D61D2C7785C0CCE04C2CA30BD8529D83AC3DB830AD90C8C0F82916D`. Artifact P:\MyMusic\MusicPlayer.apk. Runtime screenshots under analysis/evidence/for-you. Recommendation aggregates are device-local and not included in the existing backup format. Historical sections below retain their original identities and limitations.
+
+# Previous APK — library theme preview cleanup
 
 2026-10-28: removed the four sample text lines from Themes > Library and reduced the retained gradient preview from 210dp to 100dp. Theme creation/editing, colors and saved selections are unchanged. Package remains my.music, version 1.0.0.
 

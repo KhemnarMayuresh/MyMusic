@@ -22,6 +22,8 @@ The debug APK uses the local Android debug key. Release signing is intentionally
 
 - Songs, playlists, albums, artists and folders; per-group menus, persistent sorting, bulk selection/actions, scan filters and reversible hiding.
 - Foreground MediaSession playback, compact/full player, drag-and-drop queue management with edge scrolling, shuffle/repeat, seek, ±10 seconds, speed and Android notification/lock-screen controls.
+- Optional For you tab before Songs (Songs remains the launch default): Top picks, Recently Played, artist mix, Daily discover, Never Played, year-based mixes, High Quality and the current month's chart. Mixes use the visible local library and playable queues.
+- Settings can hide For you and stop its recommendation tracking without deleting saved counts. Clear recommendation data is a separate confirmed action. Counts and monthly aggregates stay on-device; existing playlist history is separate. Year/quality mixes use known metadata, with no guessing for missing tags. Recommendation counters are not included in the existing backup format.
 - Ordered persistent playlists with duplicate entries, favorites, recently/most-played collections.
 - Plain/LRC lyrics import and editing, timestamp seeking, local artwork and fifteen built-in player themes with shared visual previews, theme-specific linear/circular seeking layouts and Apply.
 - Real PCM ten-band equalizer, five-band control mode, audio-effect controls, crossfade, gapless mode and sleep timer.
