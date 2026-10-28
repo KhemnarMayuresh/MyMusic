@@ -97,7 +97,15 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
         } else if(libraryState is LibraryState.Loading && tracks.isEmpty()) {
             Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { CircularProgressIndicator() }
         } else if(group==null && activeTab=="For you" && !searching) {
-            ForYouScreen(mixes,recommendationDay,{title->onGroup(BrowserGroup("recommendation",title,title))},{list,index->vm.play(list,index)},Modifier.weight(1f))
+            ForYouScreen(
+                mixes=mixes,day=recommendationDay,
+                onMix={title->onGroup(BrowserGroup("recommendation",title,title))},
+                onPlay={list,index->vm.play(list,index)},library=tracks,playback=playback,
+                onContinue={vm.navigation.value="player"},
+                onToggle={vm.connection.controller?.let {if(it.isPlaying) it.pause() else it.play()}},
+                onShuffle={vm.play(tracks,shuffle=true)},
+                onPlayLibrary={vm.play(tracks,shuffle=false)},modifier=Modifier.weight(1f)
+            )
         } else if(group!=null || activeTab=="Songs" || searching) {
             Row(Modifier.fillMaxWidth().padding(start=16.dp,end=8.dp,top=14.dp),verticalAlignment=Alignment.CenterVertically) {
                 Text(if(selection.isEmpty()) "${displayed.size} ${if(displayed.size==1) "Song" else "Songs"}" else "${selection.size} selected",color=Muted,modifier=Modifier.weight(1f))

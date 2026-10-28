@@ -34,4 +34,16 @@ class RecommendationsTest {
   assertEquals(listOf("one"),played.getValue("Top Artist mix").map {it.title})
  }
 
+ @Test fun topPickMixCardsUseTrackedPlaysAndTheWholeWinningAlbum() {
+  val a=track("a").copy(album="A",albumId=1)
+  val b=track("b").copy(album="B",albumId=2)
+  val c=track("c").copy(album="B",albumId=2)
+  val tracks=listOf(a,b,c)
+  val result=Recommendations.build(tracks,listOf(RecommendationPlay("a",1,2),RecommendationPlay("b",2,3),RecommendationPlay("hidden",3,100)),emptyList(),"2026-10-28")
+  assertEquals(listOf("b","a"),result.getValue("Your Hits").map {it.title})
+  assertEquals(listOf("b","c"),result.getValue("Top Album").map {it.title})
+  val empty=Recommendations.build(tracks,emptyList(),emptyList(),"2026-10-28")
+  assertTrue(empty.getValue("Top Album").isEmpty());assertTrue(empty.getValue("Your Hits").isEmpty())
+ }
+
 }

@@ -1,4 +1,14 @@
-# Current APK — For you recommendations
+# Current APK — Moto-inspired For you layout
+
+2026-10-28: inspected the reference app on the authorized Moto g86 power 5G using REA screen captures. Removed the redundant in-page For you heading. Rebuilt the dashboard with a compact Continue row, Shuffle/Play pills, horizontal Top picks cards (Your Hits, Top Album, Top Artist), smaller recent-song covers, colored Explore cards with song footers, and a purple current-month chart. High Quality is first in Explore. Existing requested Before 1980 and current-month semantics are retained. Reference observations and reconstruction choices: analysis/MOTO_FOR_YOU_REFERENCE.md; raw screenshots/Evidence are under ignored analysis/evidence/moto-for-you.
+
+Top Album and Your Hits derive from existing recommendation aggregates and visible tracks; no additional persisted counters were added. Disabling still stops feature tracking and retains records until confirmed cleanup. Independent source review identified that global Play would preserve shuffle; it now explicitly requests ordered playback, while mix/song selection retains existing shuffle semantics.
+
+Verification: the new album/hits unit test failed before implementation, then all 37 JVM tests passed with zero failures/errors. Final unit/build/test-APK/lint command succeeded in 5m17s (analysis/moto-layout-verified-build.log). Lint: zero errors, 69 warnings. Five focused emulator tests passed in one run (201.21s): For you UI/default tab/horizontal mix playback/disable-retain-re-enable/confirmed cleanup; three recommendation storage/migration cases; and shuffle traversal/preservation. Log: analysis/moto-layout-device-tests.log. No full device-suite rerun for this layout revision. Emulator screenshots visually checked the dashboard and Explore cards, and the UI test verifies one For you label and High Quality before Top Artist. Global ordered Play callback was source-reviewed; the focused shuffle test exercises traversal and selection preservation rather than that button sequence.
+
+Built APK installed only on emulator-5554. The Moto was used for reference inspection, with no clone installation. aapt2 verifies package my.music, label My Music, version 1.0.0, code 2. Artifact P:\MyMusic\MusicPlayer.apk; SHA-256 `2F053141D1B3CAAF5642CF06B0F8C7305943AE1FEEE3C82793FF28340CD0DD25`. User Gradle/IDE changes preserved.
+
+# Previous APK — For you recommendations
 
 2026-10-28: added enabled-by-default For you before Songs; Songs remains the fresh-launch default. Added Top picks, Recently Played, Top Artist mix, Daily discover, Never Played, Before 1980, Before 2000, High Quality and current-month chart. Mixes open existing playable song lists and individual cards start the corresponding queue. Hidden/filtered/unavailable songs are excluded by using the visible library.
 

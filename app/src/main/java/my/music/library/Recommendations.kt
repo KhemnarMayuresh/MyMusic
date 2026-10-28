@@ -17,9 +17,12 @@ object Recommendations {
   val daily=stable.shuffled(Random(day.hashCode()))
   val ranked=library.filter {it.id.uri in history}.sortedWith(compareByDescending<Track> {history[it.id.uri]?.count ?: 0}.thenByDescending {history[it.id.uri]?.lastPlayed ?: 0}.thenBy {it.id.uri})
   val artist=library.filter {it.artist.isNotBlank() && it.artist!="Unknown artist"}.groupBy {it.artist}.entries.filter {e->e.value.any {it.id.uri in history}}.sortedWith(compareByDescending<Map.Entry<String,List<Track>>> {e->e.value.sumOf {history[it.id.uri]?.count?.toLong() ?: 0L}}.thenByDescending {it.value.size}.thenBy {it.key}).firstOrNull()
+  val album=library.filter {it.album.isNotBlank() && it.album!="Unknown album"}.groupBy {it.albumId?.takeIf {it>0}?.let {id->"id:$id"} ?: "${it.album}\u0000${it.artist}"}.entries.filter {e->e.value.any {it.id.uri in history}}.sortedWith(compareByDescending<Map.Entry<String,List<Track>>> {e->e.value.sumOf {history[it.id.uri]?.count?.toLong() ?: 0L}}.thenBy {it.key}).firstOrNull()
   val chart=months.filter {it.month==day.take(7) && it.trackUri in byUri}.sortedWith(compareByDescending<MonthPlay> {it.count}.thenBy {it.trackUri}).mapNotNull {byUri[it.trackUri]}
   return linkedMapOf(
    "Top picks" to (ranked+daily.filter {it.id.uri in favorites}+daily).distinctBy {it.id.uri}.take(50),
+   "Your Hits" to ranked,
+   "Top Album" to (album?.value?.sortedWith(compareByDescending<Track> {history[it.id.uri]?.count ?: 0}.thenBy {it.title}) ?: emptyList()),
    "Recently Played" to library.filter {it.id.uri in history}.sortedWith(compareByDescending<Track> {history[it.id.uri]?.lastPlayed ?: 0}.thenBy {it.id.uri}).take(50),
    "Top Artist mix" to (artist?.value?.sortedWith(compareByDescending<Track> {history[it.id.uri]?.count ?: 0}.thenBy {it.title}) ?: emptyList()),
    "Daily discover" to daily.sortedBy {history[it.id.uri]?.count ?: 0}.take(30),
@@ -31,7 +34,7 @@ object Recommendations {
   )
  }
  fun emptyReason(title:String)=when(title) {
-  "Recently Played","Top Artist mix"->"Play music with For you enabled to build this mix."
+  "Recently Played","Top Artist mix","Your Hits","Top Album"->"Play music with For you enabled to build this mix."
   "Month’s Top Chart"->"Play music with For you enabled this month to build your chart."
   "Before 1980","Before 2000"->"No visible songs have a matching release year. Missing year tags are not guessed."
   "High Quality"->"No visible songs have known lossless formats or a bitrate of at least 320 kbps."

@@ -40,7 +40,24 @@ class ForYouWorkflowTest {
    val tracks=(MediaLibrary(c).rescan() as OperationResult.Success).value;assertTrue(tracks.isNotEmpty())
    repo.recordPlay(tracks.first().id.uri);repo.recordPlay(tracks.first().id.uri)
    click("For you");assertTrue("Top picks shown",d.wait(Until.hasObject(By.text("Top picks")),20000));assertTrue("Recently played shown",d.wait(Until.hasObject(By.text("Recently Played")),20000));d.executeShellCommand("mkdir -p /sdcard/Download/MusicPlayerTestOutput");d.executeShellCommand("screencap -p /sdcard/Download/MusicPlayerTestOutput/for-you-dashboard.png")
-   scroll("Daily discover");click("Daily discover");assertTrue(d.wait(Until.hasObject(By.text("Play")),10000));d.findObjects(By.text("Play")).first().click()
+   assertEquals("Only the tab should say For you",1,d.findObjects(By.text("For you")).size)
+   scroll("High Quality")
+   assertTrue(d.wait(Until.hasObject(By.desc("Explore library mixes")),10000))
+   val explore=d.findObject(By.desc("Explore library mixes"))
+   val quality=explore.findObject(By.desc("Open High Quality")).visibleBounds
+   val artist=explore.findObject(By.desc("Open Top Artist mix")).visibleBounds
+   assertTrue("High Quality is first",quality.left<artist.left)
+   d.executeShellCommand("screencap -p /sdcard/Download/MusicPlayerTestOutput/for-you-explore-redesign.png")
+   var opened=false
+   repeat(8) {
+    if(!opened) {
+     val tile=runCatching {d.findObject(By.desc("Open Daily discover"))?.visibleBounds}.getOrNull()
+     if(tile!=null && tile.width()>200) {d.click(tile.centerX(),tile.centerY());opened=true}
+     else {val row=d.findObject(By.desc("Explore library mixes")).visibleBounds;d.swipe(row.right-40,row.centerY(),row.right-row.width()/3,row.centerY(),100);d.waitForIdle()}
+    }
+   }
+   assertTrue("Open Daily discover from horizontal mixes",opened)
+   assertTrue(d.wait(Until.hasObject(By.text("Play")),10000));d.findObjects(By.text("Play")).first().click()
    await {repo.state.value.recommendationPlays.sumOf {it.count}>=3}
    assertTrue(d.wait(Until.hasObject(By.desc("Open player")),10000));d.findObject(By.desc("Open player")).click();assertTrue(d.wait(Until.hasObject(By.desc("Pause")),20000));d.findObject(By.desc("Pause")).click();d.findObject(By.desc("Collapse player")).click();d.pressBack()
    assertTrue(d.wait(Until.hasObject(By.text("Top picks")),10000));settings();scroll("For you");click("For you");await {!repo.state.value.flag("for_you_enabled",true)}
