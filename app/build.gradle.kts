@@ -1,9 +1,9 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.plugin.compose") }
 android {
-    namespace = "app.local.musicplayer"
+    namespace = "my.music"
     compileSdk = 37
     defaultConfig {
-        applicationId = "app.local.musicplayer"
+        applicationId = "my.music"
         minSdk = 24
         targetSdk = 36
         versionCode = 2

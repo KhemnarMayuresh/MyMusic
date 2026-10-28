@@ -1,4 +1,14 @@
-# Current APK — My Music 1.0.0
+# Current APK — package my.music
+
+2026-10-28: migrated applicationId, namespace, main/test/androidTest Kotlin packages, imports, fully qualified component references and source directories to `my.music`. Active README/plan references updated. Version remains 1.0.0, version code 2, label My Music. Project is now located at P:\MyMusic. User IDE/Gradle configuration changes were preserved.
+
+Verification: all 33 JVM tests passed, zero failures/errors/skips. Unit/build/lint command succeeded in 13m27s; lint has zero errors/fatal issues and 69 warnings. Source scan found no old identifier in app source or active Gradle configuration. aapt2 verified my.music, my.music.MainActivity, my.music.playback.PlaybackService, all three my.music.widgets receivers, and provider authority my.music.files. All APK DEX files were checked for the old dotted and slash package identifiers; none remained.
+
+Runtime limitation: the test emulator did not complete a reliable startup for installation/launch checks. Initial installation attempts failed because Android package/activity services were not yet available; runtime migration checks remain unverified. No device instrumentation suite was run for this revision. Physical connected device was not modified. The new application ID installs separately from the old package and does not automatically inherit its data.
+
+Current `MusicPlayer.apk` SHA-256: `00BAB1E7F7030669685EA858B85F8C4A4AAAE53258EC8768C1C37090B7897AF7`. Artifact: P:\MyMusic\MusicPlayer.apk. Sections below are historical and retain their original package IDs and APK identities.
+
+# Previous APK — My Music 1.0.0
 
 2026-10-21: Film is static during playback and no longer starts the animation frame loop. Drawer branding is a single vertically centered row using the supplied logo and My Music title. Version name is 1.0.0, version code 2; Settings reads BuildConfig.VERSION_NAME instead of a hardcoded version.
 

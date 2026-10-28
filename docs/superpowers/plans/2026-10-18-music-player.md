@@ -15,7 +15,7 @@
 - Build a clean Android offline music player at `P:\MusicPlayer` matching the installed reference app version `4.4.1.189` on a functional level.
 - Remove ads, in-app purchases, premium locks, and unrelated app promotions.
 - Keep ordinary music features available without payment.
-- Create original icons/default artwork and use a distinct application ID: `app.local.musicplayer`.
+- Create original icons/default artwork and use a distinct application ID: `my.music`.
 - Never write source music merely to update display state.
 - Persist restart state without silently auto-playing after process restoration.
 - Use the existing Android SDK and Android Studio JDK; do not install unrelated tools.
@@ -40,15 +40,15 @@ All paths below are relative to `P:\MusicPlayer`.
 - `analysis/CONTRACTS.md`, `analysis/PARITY.md`: reference contracts and feature-by-feature evidence/test status.
 - `analysis/scripts/`: fixture generation and bounded ADB observation scripts; outputs under ignored `analysis/fixtures/` and `analysis/evidence/`.
 - Root Gradle wrapper/configuration, `app/build.gradle.kts`, `app/src/main/AndroidManifest.xml`: independent Android build and platform declarations.
-- `app/src/main/java/app/local/musicplayer/model/Media.kt`: `TrackId(uri: String)`, `Track(id: TrackId, title: String, artist: String, album: String, albumId: Long?, folder: String, durationMs: Long, mimeType: String?, dateAddedSeconds: Long, artworkUri: String?)`, `QueueEntry(entryId: String, trackId: TrackId)`.
+- `app/src/main/java/my/music/model/Media.kt`: `TrackId(uri: String)`, `Track(id: TrackId, title: String, artist: String, album: String, albumId: Long?, folder: String, durationMs: Long, mimeType: String?, dateAddedSeconds: Long, artworkUri: String?)`, `QueueEntry(entryId: String, trackId: TrackId)`.
 - `library/`: permission-aware MediaStore repository and search/sort/group queries.
 - `playback/`: service/controller, durable queue, timer and effects integration.
 - `collections/`: Room entities/DAO/repository for ordered playlists, favorites, history and overrides.
 - `settings/`: typed DataStore preferences; settings UI resides with its owning feature.
 - `ui/`: navigation, library, compact/full player, queue and reusable accessible controls.
 - `lyrics/`, `files/`, `backup/`, `transfer/`, `widgets/`: feature-specific storage, platform integrations and UI.
-- `app/src/test/java/app/local/musicplayer/`: deterministic JVM tests for pure semantics.
-- `app/src/androidTest/java/app/local/musicplayer/`: real Android workflow tests and permission/media-service tests.
+- `app/src/test/java/my/music/`: deterministic JVM tests for pure semantics.
+- `app/src/androidTest/java/my/music/`: real Android workflow tests and permission/media-service tests.
 - `scripts/verify.ps1`, `README.md`: reproducible verification/build commands and delivery instructions.
 
 Domain results use `OperationResult<T>` with `Success(value)` and `Failure(reason)`; named failures distinguish permission required, unavailable media, unsupported format, malformed input, cancelled consent, and I/O failure. Never collapse unknown/unavailable into an empty successful library. Kotlin suspending APIs below are called from structured application scopes, never blocking the UI thread.

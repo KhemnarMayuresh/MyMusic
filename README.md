@@ -1,6 +1,6 @@
 # My Music
 
-A native Android player for local audio, implemented in Kotlin, Compose and Media3. Application ID: `app.local.musicplayer`. The original reference app is installed separately and is never replaced.
+A native Android player for local audio, implemented in Kotlin, Compose and Media3. Application ID: `my.music`. The original reference app is installed separately and is never replaced.
 
 ## Build and install
 
