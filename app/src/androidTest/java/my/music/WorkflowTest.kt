@@ -110,7 +110,7 @@ class WorkflowTest {
         instrumentation.uiAutomation.grantRuntimePermission(context.packageName,if(Build.VERSION.SDK_INT>=33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE)
         val source=(MediaLibrary(context).rescan() as OperationResult.Success).value.firstOrNull {it.mimeType=="audio/mpeg"}
         org.junit.Assume.assumeTrue("Requires a local MP3 to copy for the integration fixture",source!=null && Build.VERSION.SDK_INT>=29)
-        val uri=context.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,ContentValues().apply {put(MediaStore.Audio.Media.DISPLAY_NAME,"Tag writer test.mp3");put(MediaStore.Audio.Media.MIME_TYPE,"audio/mpeg");put(MediaStore.Audio.Media.RELATIVE_PATH,"Music/CloneFixtures/");put(MediaStore.Audio.Media.IS_PENDING,1)})!!
+        val uri=context.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,ContentValues().apply {put(MediaStore.Audio.Media.DISPLAY_NAME,"Tag writer test.mp3");put(MediaStore.Audio.Media.MIME_TYPE,"audio/mpeg");put(MediaStore.Audio.Media.RELATIVE_PATH,"Music/MyMusicTestFixtures/");put(MediaStore.Audio.Media.IS_PENDING,1)})!!
         var backup: File?=null
         try {
             val original=context.contentResolver.openInputStream(Uri.parse(source!!.id.uri))!!.use {it.readBytes()}

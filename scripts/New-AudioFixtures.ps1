@@ -1,4 +1,4 @@
-param([string]$OutputDirectory = (Join-Path $PSScriptRoot '..\fixtures'))
+param([string]$OutputDirectory = (Join-Path $PSScriptRoot '..\analysis\fixtures'))
 $ErrorActionPreference = 'Stop'
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 foreach ($fixture in @(@('Dawn',440,12), @('Night',660,18), @('Dawn reprise',880,8))) {
