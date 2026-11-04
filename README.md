@@ -61,6 +61,7 @@ Application ID: `my.music`. Minimum Android version: 7.0 (API 24). Target API: 3
 
 ## Development
 
+- [AI handoff](docs/AI_HANDOFF.md) and [project context](docs/PROJECT_CONTEXT.md) for assistants continuing work in another chat or tool.
 - [Architecture and data ownership](DESIGN.md)
 - [Testing](docs/TESTING.md)
 - [Recommendation behavior](docs/RECOMMENDATIONS.md)
