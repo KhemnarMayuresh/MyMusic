@@ -18,7 +18,7 @@ My Music is a clean, useful local music player. Keep existing features functiona
 
 ### Library and playback
 
-- Browse songs, playlists, folders, albums, and artists. Preserve the active tab and opened group when returning from the player.
+- Browse songs, playlists, folders, albums, and artists via the top tab strip or left/right horizontal swipes (`For you <-> Songs <-> Playlists <-> Folders <-> Albums <-> Artists`). Preserve the active tab and opened group when returning from the player.
 - Folder, album, and artist screens need sorting, multi-selection, and actions such as play, play next, add to queue, add to playlist, and hide where applicable.
 - The queue supports direct drag-and-drop reordering. Keep playback position attached to the active occurrence when queue entries move.
 - Shuffle controls must reshuffle the active list or queue. Global Play starts in order; selecting an individual song or mix preserves the current shuffle setting.
@@ -55,7 +55,8 @@ See [DESIGN.md](../DESIGN.md) for the fuller architecture. Key owners:
 - `library/`: MediaStore discovery, grouping/filtering, and recommendation ranking.
 - `collections/`: SQLite user collections, preferences, history, overrides, and recommendation aggregates.
 - `playback/`: the foreground Media3 service, active player, queue, transitions, and audio effects.
-- `ui/`: navigation, screens, settings, themes, and Compose widget previews.
+- `island/`: opt-in Dynamic Island capability detection, cutout geometry, `DynamicIslandBus`, `DynamicIslandOverlayController`, custom pill/card overlay view, and privacy-minimal `DynamicIslandAccessibilityService`.
+- `ui/`: navigation, screens, settings, Dynamic Island onboarding/settings preview, themes, and Compose widget previews.
 - `widgets/`: RemoteViews layouts, service actions, artwork requests, and Vinyl timeline refresh.
 - `lyrics/`, `files/`, `backup/`, `transfer/`: their named local features.
 
@@ -74,4 +75,4 @@ Preserve the existing ownership boundaries: MediaStore owns discovered media fac
 
 ## Conversation history captured
 
-The detailed asks that shaped the product are summarized in [project context](PROJECT_CONTEXT.md), including library menus, queue drag behavior, theme-specific requirements, brand/package identity, For you tracking semantics, widget design, and documentation preferences. That file is the durable record to update when the user makes a new product decision.
+The detailed asks that shaped the product are summarized in [project context](PROJECT_CONTEXT.md), including library menus, queue drag behavior, theme-specific requirements, brand/package identity, For you tracking semantics, widget design, Dynamic Island cutout hub opt-in/fallback rules, and documentation preferences. That file is the durable record to update when the user makes a new product decision.

@@ -52,7 +52,9 @@ class CollectionRepository(context: Context, databaseName: String="music.db") {
     private val lock=Mutex()
     private val mutable=MutableStateFlow(CollectionState())
     val state=mutable.asStateFlow()
-    suspend fun load()=withContext(Dispatchers.IO) { lock.withLock { mutable.value=read(helper.readableDatabase) } }
+    private val loadedMutable=MutableStateFlow(false)
+    val loaded=loadedMutable.asStateFlow()
+    suspend fun load()=withContext(Dispatchers.IO) { lock.withLock { mutable.value=read(helper.readableDatabase); loadedMutable.value=true } }
     private fun read(db: SQLiteDatabase): CollectionState {
         fun values(table: String)=db.rawQuery("SELECT uri FROM $table",null).use { c -> buildSet { while(c.moveToNext()) add(c.getString(0)) } }
         fun map(table: String)=db.rawQuery("SELECT key,value FROM $table",null).use { c -> buildMap { while(c.moveToNext()) put(c.getString(0),c.getString(1)) } }

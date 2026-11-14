@@ -54,6 +54,10 @@ import my.music.playback.PlaybackSnapshot
             item {ActionRow(Icons.Rounded.DeleteOutline,"Clear recommendation data","Delete For you counters and monthly charts. Songs, playlists and existing Recently Played history are kept.") {clearRecommendations=true}}
             item {PreferenceToggle("Keep screen on","Stay awake while the full player is open",data.flag("keep_screen")) {vm.pref("keep_screen",it.toString())}}
             item {PreferenceToggle("Lock screen playing","Show the player over the lock screen when opened during playback",data.flag("lock_screen",true)) {vm.pref("lock_screen",it.toString())}}
+            item {
+                val islandOn=data.flag(my.music.island.IslandConfig.KEY_ENABLED)
+                ActionRow(Icons.Rounded.GraphicEq,"Dynamic Island",if(islandOn) "Enabled — camera cutout pill & controls" else "Off — tap to set up camera cutout pill") {onNavigate("dynamicIsland")}
+            }
             item {ActionRow(Icons.Rounded.Notifications,"Notifications","Android manages media and lock-screen controls") {val intent=if(android.os.Build.VERSION.SDK_INT>=26) Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,context.packageName) else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:${context.packageName}"));context.startActivity(intent)}}
             item {ActionRow(Icons.Rounded.Palette,"Skin theme",data.pref("theme","Midnight")) {onNavigate("themes")}}
             item {ActionRow(Icons.Rounded.Widgets,"Widgets","Add playback controls to your home screen") {onNavigate("widgets")}}

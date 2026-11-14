@@ -11,8 +11,11 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import android.content.Context
+import android.content.res.Configuration
 import androidx.media3.session.*
 import my.music.MusicApplication
+import my.music.island.*
+import my.music.model.LibraryDetails
 import my.music.widgets.PlayerWidgetProvider
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -33,6 +36,7 @@ class PlaybackService: MediaSessionService() {
     private lateinit var playerListener: Player.Listener
     private val history=ListeningHistoryTracker()
     private var gapResume: Job?=null
+    private var islandFallbackOverlay: DynamicIslandOverlayController?=null
     private val noisyReceiver=object: android.content.BroadcastReceiver() {
         override fun onReceive(context: Context,intent: Intent) {
             if(app.collections.state.value.flag("pause_detach",true)) {cancelGapResume();player.pause()}
@@ -110,12 +114,14 @@ class PlaybackService: MediaSessionService() {
             history.transition(next.currentMediaItem?.mediaId)
             recordPlayback()
             queueStore.save(next)
+            publishDynamicIsland(next)
         }
         playerListener=object: Player.Listener {
             override fun onEvents(player: Player,events: Player.Events) {
                 if(transition.overlapping && events.containsAny(Player.EVENT_TIMELINE_CHANGED,Player.EVENT_PLAYBACK_PARAMETERS_CHANGED,Player.EVENT_REPEAT_MODE_CHANGED,Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED)) transition.cancel()
                 if(events.containsAny(Player.EVENT_MEDIA_ITEM_TRANSITION,Player.EVENT_TIMELINE_CHANGED,Player.EVENT_PLAY_WHEN_READY_CHANGED,Player.EVENT_REPEAT_MODE_CHANGED,Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED)) queueStore.save(player)
                 PlayerWidgetProvider.refresh(this@PlaybackService,player)
+                publishDynamicIsland(player)
             }
             override fun onMediaItemTransition(mediaItem: MediaItem?,reason: Int) {
                 cancelGapResume()
@@ -149,9 +155,23 @@ class PlaybackService: MediaSessionService() {
             }
         }
         player.addListener(playerListener)
+        DynamicIslandBus.actions=object: DynamicIslandActions {
+            override fun togglePlayPause() {
+                scope.launch(Dispatchers.Main.immediate) {
+                    cancelGapResume()
+                    if(player.isPlaying) player.pause() else { if(player.playbackState==Player.STATE_IDLE) player.prepare(); player.play() }
+                }
+            }
+            override fun previous() { scope.launch(Dispatchers.Main.immediate) { cancelGapResume(); player.seekToPrevious() } }
+            override fun next() { scope.launch(Dispatchers.Main.immediate) { cancelGapResume(); player.seekToNextMediaItem() } }
+            override fun seekTo(positionMs: Long) { scope.launch(Dispatchers.Main.immediate) { cancelGapResume(); player.seekTo(positionMs.coerceAtLeast(0L)) } }
+        }
+        islandFallbackOverlay=DynamicIslandOverlayController(this,IslandRenderMode.OVERLAY_BELOW_STATUS_BAR).also {it.start()}
+        publishDynamicIsland(player)
         scope.launch {
             app.collections.state.collect {
                 applySettings()
+                publishDynamicIsland(player)
             }
         }
         scope.launch {
@@ -164,6 +184,7 @@ class PlaybackService: MediaSessionService() {
                 }
                 val settings=app.collections.state.value
                 transition.tick(settings.flag("crossfade") && timer?.finishCurrentTrack!=true,(settings.pref("crossfade_seconds","5").toFloatOrNull() ?: 5f).coerceIn(1f,12f))
+                if(player.isPlaying) publishDynamicIsland(player)
                 if(++ticks%10==0 && player.isPlaying) {queueStore.save(player);PlayerWidgetProvider.refreshProgress(this@PlaybackService,player)}
             }
         }
@@ -216,8 +237,33 @@ class PlaybackService: MediaSessionService() {
         }
         return result
     }
+    private fun publishDynamicIsland(activePlayer: Player=player) {
+        val item=activePlayer.currentMediaItem
+        if(item==null) { DynamicIslandBus.clearMedia(); return }
+        val source=item.mediaMetadata.extras?.getString("source_uri") ?: item.localConfiguration?.uri?.toString()
+        val details=LibraryDetails.parse(app.collections.state.value.overrides[source])
+        val meta=item.mediaMetadata
+        val duration=activePlayer.duration.takeIf {it>0} ?: meta.extras?.getLong("duration") ?: 0L
+        DynamicIslandBus.publishMedia(DynamicIslandMediaState(
+            active=true,
+            playing=activePlayer.isPlaying,
+            mediaId=item.mediaId,
+            title=details?.title ?: meta.title?.toString() ?: "My Music",
+            artist=details?.artist ?: meta.artist?.toString() ?: "Local audio",
+            artworkUri=details?.cover ?: meta.artworkUri?.toString(),
+            positionMs=activePlayer.currentPosition.coerceAtLeast(0L),
+            durationMs=duration.coerceAtLeast(0L),
+        ))
+    }
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        islandFallbackOverlay?.onConfigurationChanged(newConfig)
+    }
     override fun onDestroy() {
         PlayerAudioSignal.active=null
+        DynamicIslandBus.actions=null
+        DynamicIslandBus.clearMedia()
+        islandFallbackOverlay?.stop();islandFallbackOverlay=null
         cancelGapResume();unregisterReceiver(noisyReceiver)
         queueStore.save(player)
         transition.cancel();scope.cancel();session?.release();session=null;disposePlayer(player)

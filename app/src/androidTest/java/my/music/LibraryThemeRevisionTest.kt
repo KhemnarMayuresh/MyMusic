@@ -67,4 +67,32 @@ class LibraryThemeRevisionTest {
   } finally {ins.runOnMainSync {controller.release()}}
  }
 
+ @Test fun swipeSwitchesLibraryTabsBetweenForYouSongsAndPlaylists():Unit=runBlocking {
+  val ins=InstrumentationRegistry.getInstrumentation();val context=ins.targetContext;val d=UiDevice.getInstance(ins)
+  val repo=(context.applicationContext as MusicApplication).collections
+  val oldForYou=repo.state.value.pref("for_you_enabled","true")
+  ins.uiAutomation.grantRuntimePermission(context.packageName,Manifest.permission.READ_MEDIA_AUDIO)
+  ins.uiAutomation.grantRuntimePermission(context.packageName,Manifest.permission.POST_NOTIFICATIONS)
+  try {
+   repo.setPreferences(mapOf("for_you_enabled" to "true"))
+   d.wakeUp();d.executeShellCommand("wm dismiss-keyguard")
+   context.startActivity(context.packageManager.getLaunchIntentForPackage(context.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+   assertTrue(d.wait(Until.hasObject(By.desc("Open menu")),60000))
+   assertTrue("Starts on Songs tab",d.wait(Until.hasObject(By.desc("Sort songs")),10000))
+   val midY=(d.displayHeight*0.55f).toInt()
+   val leftX=(d.displayWidth*0.20f).toInt()
+   val rightX=(d.displayWidth*0.80f).toInt()
+   // Standard Android pager: drag right (leftX -> rightX) reveals 'For you' on the left
+   d.swipe(leftX,midY,rightX,midY,20)
+   assertTrue("Swiping right from Songs reveals For you",d.wait(Until.hasObject(By.text("Top picks")),10000))
+   // Drag left (rightX -> leftX) above carousel rows returns to 'Songs'
+   val forYouReturnY=d.findObject(By.text("Top picks"))?.visibleBounds?.centerY() ?: (d.displayHeight*0.25f).toInt()
+   d.swipe(rightX,forYouReturnY,leftX,forYouReturnY,20)
+   assertTrue("Swiping left from For you returns to Songs",d.wait(Until.hasObject(By.desc("Sort songs")),10000))
+   // Drag left again (rightX -> leftX) moves right to 'Playlists'
+   d.swipe(rightX,midY,leftX,midY,20)
+   assertTrue("Swiping left from Songs moves to Playlists",d.wait(Until.hasObject(By.text("New playlist")),10000))
+  } finally {repo.setPreferences(mapOf("for_you_enabled" to oldForYou))}
+ }
+
 }

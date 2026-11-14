@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -20,12 +22,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import my.music.PlayerViewModel
 import my.music.collections.CollectionState
 import my.music.library.LibraryQuery
 import my.music.library.LibraryState
 import my.music.model.Track
 import my.music.playback.PlaybackSnapshot
+import kotlin.math.abs
 
 data class BrowserGroup(val kind: String,val key: String,val title: String)
 
@@ -52,18 +58,42 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
         }
     }
 }
-@Composable fun LibraryScreen(vm: PlayerViewModel,tracks: List<Track>,data: CollectionState,libraryState: LibraryState,playback: PlaybackSnapshot,group: BrowserGroup?,tab:String,onTab:(String)->Unit,onBack: ()->Unit,onMenu: ()->Unit,onGroup: (BrowserGroup)->Unit,onTrackMenu: (Track)->Unit,onNewPlaylist: ()->Unit,onAddSelection: (List<Track>)->Unit,onTheme: ()->Unit,onPermission: ()->Unit,onDeleteSelection: (List<Track>)->Unit) {
+@Composable fun LibraryScreen(vm: PlayerViewModel,tracks: List<Track>,data: CollectionState,libraryState: LibraryState,playback: PlaybackSnapshot,group: BrowserGroup?,tab:String,onTab:(String)->Unit,onBack: ()->Unit,onMenu: ()->Unit,onGroup: (BrowserGroup)->Unit,onTrackMenu: (Track)->Unit,onNewPlaylist: ()->Unit,onAddSelection: (List<Track>)->Unit,onTheme: ()->Unit,onPermission: ()->Unit,onDeleteSelection: (List<Track>)->Unit,firstInstallIsland: (@Composable () -> Unit)? = null) {
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var sortMenu by remember { mutableStateOf(false) }
     var selection by remember { mutableStateOf(setOf<String>()) }
     val sort=data.pref("sort","Title A–Z")
     val recommendationDay=rememberRecommendationDay()
-    val needsMixes=data.flag("for_you_enabled",true) && (tab=="For you" || group?.kind=="recommendation")
-    val mixes=remember(tracks,data.recommendationPlays,data.monthPlays,data.favorites,recommendationDay,needsMixes) {if(needsMixes) my.music.library.Recommendations.build(tracks,data.recommendationPlays,data.monthPlays,recommendationDay,data.favorites) else emptyMap()}
     val tabs=if(data.flag("for_you_enabled",true)) listOf("For you","Songs","Playlists","Folders","Albums","Artists") else listOf("Songs","Playlists","Folders","Albums","Artists")
     val activeTab=tab.takeIf {it in tabs} ?: "Songs"
+    val activeIndex=tabs.indexOf(activeTab).coerceAtLeast(0)
+    val pagerState=rememberPagerState(initialPage=activeIndex) { tabs.size }
+    val pagerScope=rememberCoroutineScope()
+    val currentTabState by rememberUpdatedState(activeTab)
+    val currentTabsState by rememberUpdatedState(tabs)
+    val currentOnTabState by rememberUpdatedState(onTab)
     LaunchedEffect(activeTab,tab) {if(activeTab!=tab) onTab(activeTab)}
+    LaunchedEffect(activeIndex,tabs) {
+        yield()
+        if(!pagerState.isScrollInProgress && pagerState.targetPage!=activeIndex && pagerState.currentPage!=activeIndex) {
+            pagerState.scrollToPage(activeIndex)
+        }
+    }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }
+            .distinctUntilChanged()
+            .collect { page->
+                val settledTab=currentTabsState.getOrNull(page) ?: return@collect
+                if(settledTab!=currentTabState) {
+                    selection=emptySet()
+                    currentOnTabState(settledTab)
+                }
+            }
+    }
+    val forYouIndex=tabs.indexOf("For you")
+    val needsMixes=data.flag("for_you_enabled",true) && (group?.kind=="recommendation" || activeTab=="For you" || (forYouIndex>=0 && abs(pagerState.currentPage-forYouIndex)<=1))
+    val mixes=remember(tracks,data.recommendationPlays,data.monthPlays,data.favorites,recommendationDay,needsMixes) {if(needsMixes) my.music.library.Recommendations.build(tracks,data.recommendationPlays,data.monthPlays,recommendationDay,data.favorites) else emptyMap()}
     val groupTracks=when(group?.kind) {
         "recommendation"->mixes[group.key].orEmpty()
         "folder"->tracks.filter { it.folder==group.key }
@@ -76,6 +106,36 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
     }
     val ranked=group?.kind in listOf("recent","most","recommendation")
     val displayed=remember(groupTracks,query,sort,ranked) { LibraryQuery.browse(groupTracks,query,if(ranked) null else sort) }
+    val allSongs=remember(tracks,sort) { LibraryQuery.browse(tracks,"",sort) }
+    @Composable
+    fun songsPage(items: List<Track>, showSort: Boolean, modifier: Modifier) {
+        Column(modifier) {
+            Row(Modifier.fillMaxWidth().padding(start=16.dp,end=8.dp,top=14.dp),verticalAlignment=Alignment.CenterVertically) {
+                Text(if(selection.isEmpty()) "${items.size} ${if(items.size==1) "Song" else "Songs"}" else "${selection.size} selected",color=Muted,modifier=Modifier.weight(1f))
+                if(showSort) Box {
+                    IconButton(onClick={sortMenu=true}) { Icon(Icons.Rounded.Sort,"Sort songs",tint=Muted) }
+                    DropdownMenu(sortMenu,{sortMenu=false}) { listOf("Title A–Z","Title Z–A","Newest","Oldest","Artist","Duration").forEach { order -> DropdownMenuItem(text={Text(order)},onClick={vm.pref("sort",order);sortMenu=false}) } }
+                }
+                IconButton(onClick={selection=if(selection.isEmpty()) items.map { it.id.uri }.toSet() else emptySet()}) { Icon(Icons.Rounded.Checklist,"Select songs",tint=Muted) }
+            }
+            if(selection.isNotEmpty()) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly) {
+                TextButton(onClick={onAddSelection(items.filter { it.id.uri in selection })}) { Text("Add to playlist") }
+                TextButton(onClick={vm.enqueue(items.filter { it.id.uri in selection });selection=emptySet()}) { Text("Add to queue") }
+                TextButton(onClick={selection=emptySet()}) { Text("Cancel") }
+            } else Row(Modifier.padding(horizontal=16.dp,vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                Button(onClick={vm.play(items,shuffle=true)},enabled=items.isNotEmpty(),modifier=Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=Color.White,contentColor=Ink)) { Icon(Icons.Rounded.Shuffle,null);Spacer(Modifier.width(8.dp));Text("Shuffle") }
+                Button(onClick={vm.play(items)},enabled=items.isNotEmpty(),modifier=Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=Color.White,contentColor=Ink)) { Icon(Icons.Rounded.PlayArrow,null);Spacer(Modifier.width(8.dp));Text("Play") }
+            }
+            if(items.isEmpty()) {
+                if(group?.kind=="recommendation") EmptyLibrary(if(query.isBlank()) "No songs in this mix yet" else "No matching songs",if(query.isBlank()) my.music.library.Recommendations.emptyReason(group.key) else "Try another title, artist or album.","Back to For you",onBack)
+                else EmptyLibrary(if(query.isBlank()) "No music yet" else "No matching songs",if(query.isBlank()) "Add local audio files, then scan your music." else "Try another title, artist or album.","Scan music",{vm.rescan()})
+            } else LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
+                itemsIndexed(items,key={index,track->"$index:${track.id.uri}"}) { index,track ->
+                    TrackRow(track,playback.current?.mediaMetadata?.extras?.getString("source_uri")==track.id.uri,onClick={if(selection.isEmpty()) vm.play(items,index) else selection=if(track.id.uri in selection) selection-track.id.uri else selection+track.id.uri},onMenu={onTrackMenu(track)},onLongClick={selection=selection+track.id.uri},selected=track.id.uri in selection)
+                }
+            }
+        }
+    }
     Column(Modifier.fillMaxSize()) {
         if(group!=null) Header(group.title,onBack) else Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically) {
             IconButton(onClick=onMenu) { Icon(Icons.Rounded.Menu,"Open menu") }
@@ -87,59 +147,41 @@ data class BrowserGroup(val kind: String,val key: String,val title: String)
         if(searching || group!=null) {
             OutlinedTextField(query,{query=it},Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=4.dp),singleLine=true,placeholder={Text("Search songs, artists, albums")},leadingIcon={Icon(Icons.Rounded.Search,null)},shape=RoundedCornerShape(24.dp))
         }
-        if(group==null && !searching) ScrollableTabRow(selectedTabIndex=tabs.indexOf(activeTab),containerColor=Color.Transparent,edgePadding=8.dp,divider={}) {
-            tabs.forEach { label -> Tab(selected=activeTab==label,onClick={onTab(label);selection=emptySet()},text={Text(label,fontWeight=if(activeTab==label) FontWeight.Bold else FontWeight.Normal,style=MaterialTheme.typography.titleLarge)}) }
+        if(group==null && !searching) ScrollableTabRow(selectedTabIndex=pagerState.currentPage.coerceIn(0,(tabs.size-1).coerceAtLeast(0)),containerColor=Color.Transparent,edgePadding=8.dp,divider={}) {
+            tabs.forEachIndexed { index, label -> Tab(selected=pagerState.currentPage==index,onClick={onTab(label);selection=emptySet();pagerScope.launch { pagerState.animateScrollToPage(index) }},text={Text(label,fontWeight=if(pagerState.currentPage==index) FontWeight.Bold else FontWeight.Normal,style=MaterialTheme.typography.titleLarge)}) }
         }
+        if(group==null && !searching && activeTab=="Songs") firstInstallIsland?.invoke()
         if(libraryState is LibraryState.PermissionRequired) {
             EmptyLibrary("Your music, on your device","Allow audio access to discover your songs.","Allow audio access",onPermission)
         } else if(libraryState is LibraryState.Failed) {
             EmptyLibrary("Can't read music",libraryState.failure.message,"Try again",{vm.rescan()})
         } else if(libraryState is LibraryState.Loading && tracks.isEmpty()) {
             Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { CircularProgressIndicator() }
-        } else if(group==null && activeTab=="For you" && !searching) {
-            ForYouScreen(
-                mixes=mixes,day=recommendationDay,
-                onMix={title->onGroup(BrowserGroup("recommendation",title,title))},
-                onPlay={list,index->vm.play(list,index)},library=tracks,playback=playback,
-                onContinue={vm.navigation.value="player"},
-                onToggle={vm.connection.controller?.let {if(it.isPlaying) it.pause() else it.play()}},
-                onShuffle={vm.play(tracks,shuffle=true)},
-                onPlayLibrary={vm.play(tracks,shuffle=false)},modifier=Modifier.weight(1f)
-            )
-        } else if(group!=null || activeTab=="Songs" || searching) {
-            Row(Modifier.fillMaxWidth().padding(start=16.dp,end=8.dp,top=14.dp),verticalAlignment=Alignment.CenterVertically) {
-                Text(if(selection.isEmpty()) "${displayed.size} ${if(displayed.size==1) "Song" else "Songs"}" else "${selection.size} selected",color=Muted,modifier=Modifier.weight(1f))
-                if(!ranked) Box {
-                    IconButton(onClick={sortMenu=true}) { Icon(Icons.Rounded.Sort,"Sort songs",tint=Muted) }
-                    DropdownMenu(sortMenu,{sortMenu=false}) { listOf("Title A–Z","Title Z–A","Newest","Oldest","Artist","Duration").forEach { order -> DropdownMenuItem(text={Text(order)},onClick={vm.pref("sort",order);sortMenu=false}) } }
-                }
-                IconButton(onClick={selection=if(selection.isEmpty()) displayed.map { it.id.uri }.toSet() else emptySet()}) { Icon(Icons.Rounded.Checklist,"Select songs",tint=Muted) }
-            }
-            if(selection.isNotEmpty()) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly) {
-                TextButton(onClick={onAddSelection(displayed.filter { it.id.uri in selection })}) { Text("Add to playlist") }
-                TextButton(onClick={vm.enqueue(displayed.filter { it.id.uri in selection });selection=emptySet()}) { Text("Add to queue") }
-                TextButton(onClick={selection=emptySet()}) { Text("Cancel") }
-            } else Row(Modifier.padding(horizontal=16.dp,vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                Button(onClick={vm.play(displayed,shuffle=true)},enabled=displayed.isNotEmpty(),modifier=Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=Color.White,contentColor=Ink)) { Icon(Icons.Rounded.Shuffle,null);Spacer(Modifier.width(8.dp));Text("Shuffle") }
-                Button(onClick={vm.play(displayed)},enabled=displayed.isNotEmpty(),modifier=Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=Color.White,contentColor=Ink)) { Icon(Icons.Rounded.PlayArrow,null);Spacer(Modifier.width(8.dp));Text("Play") }
-            }
-            if(displayed.isEmpty()) {
-                if(group?.kind=="recommendation") EmptyLibrary(if(query.isBlank()) "No songs in this mix yet" else "No matching songs",if(query.isBlank()) my.music.library.Recommendations.emptyReason(group.key) else "Try another title, artist or album.","Back to For you",onBack)
-                else EmptyLibrary(if(query.isBlank()) "No music yet" else "No matching songs",if(query.isBlank()) "Add local audio files, then scan your music." else "Try another title, artist or album.","Scan music",{vm.rescan()})
-            }
-            else LazyColumn(Modifier.weight(1f)) { itemsIndexed(displayed,key={index,track->"$index:${track.id.uri}"}) { index,track ->
-                TrackRow(track,playback.current?.mediaMetadata?.extras?.getString("source_uri")==track.id.uri,onClick={if(selection.isEmpty()) vm.play(displayed,index) else selection=if(track.id.uri in selection) selection-track.id.uri else selection+track.id.uri},onMenu={onTrackMenu(track)},onLongClick={selection=selection+track.id.uri},selected=track.id.uri in selection)
-            } }
-        } else if(activeTab=="Playlists") {
-            LazyColumn {
-                item { ActionRow(Icons.Rounded.Favorite,"Favorites","${data.favorites.size} songs") { onGroup(BrowserGroup("favorites","","Favorites")) } }
-                item { ActionRow(Icons.Rounded.History,"Recently played") { onGroup(BrowserGroup("recent","","Recently played")) } }
-                item { ActionRow(Icons.Rounded.TrendingUp,"Most played") { onGroup(BrowserGroup("most","","Most played")) } }
-                item { ActionRow(Icons.Rounded.PlaylistAdd,"New playlist",onClick=onNewPlaylist) }
-                items(data.playlists,key={it.id}) { p -> ActionRow(Icons.Rounded.QueueMusic,p.name,"${p.entries.size} songs") { onGroup(BrowserGroup("playlist",p.id,p.name)) } }
-            }
+        } else if(group!=null || searching) {
+            songsPage(displayed,!ranked,Modifier.weight(1f).fillMaxWidth())
         } else {
-            GroupBrowser(vm,tracks,when(activeTab) {"Folders"->"folder";"Albums"->"album";else->"artist"},onGroup,onAddSelection,onDeleteSelection)
+            HorizontalPager(state=pagerState,beyondViewportPageCount=1,modifier=Modifier.weight(1f).fillMaxWidth()) { pageIndex->
+                when(tabs[pageIndex]) {
+                    "For you"->ForYouScreen(
+                        mixes=mixes,day=recommendationDay,
+                        onMix={title->onGroup(BrowserGroup("recommendation",title,title))},
+                        onPlay={list,index->vm.play(list,index)},library=tracks,playback=playback,
+                        onContinue={vm.navigation.value="player"},
+                        onToggle={vm.connection.controller?.let {if(it.isPlaying) it.pause() else it.play()}},
+                        onShuffle={vm.play(tracks,shuffle=true)},
+                        onPlayLibrary={vm.play(tracks,shuffle=false)},modifier=Modifier.fillMaxSize()
+                    )
+                    "Songs"->songsPage(allSongs,true,Modifier.fillMaxSize())
+                    "Playlists"->LazyColumn(Modifier.fillMaxSize()) {
+                        item { ActionRow(Icons.Rounded.Favorite,"Favorites","${data.favorites.size} songs") { onGroup(BrowserGroup("favorites","","Favorites")) } }
+                        item { ActionRow(Icons.Rounded.History,"Recently played") { onGroup(BrowserGroup("recent","","Recently played")) } }
+                        item { ActionRow(Icons.Rounded.TrendingUp,"Most played") { onGroup(BrowserGroup("most","","Most played")) } }
+                        item { ActionRow(Icons.Rounded.PlaylistAdd,"New playlist",onClick=onNewPlaylist) }
+                        items(data.playlists,key={it.id}) { p -> ActionRow(Icons.Rounded.QueueMusic,p.name,"${p.entries.size} songs") { onGroup(BrowserGroup("playlist",p.id,p.name)) } }
+                    }
+                    else->GroupBrowser(vm,tracks,when(tabs[pageIndex]) {"Folders"->"folder";"Albums"->"album";else->"artist"},onGroup,onAddSelection,onDeleteSelection)
+                }
+            }
         }
     }
 }

@@ -1,0 +1,5 @@
+<resources>
+    <string name="dynamic_island_service_label">My Music Dynamic Island</string>
+    <string name="dynamic_island_service_description">Displays an interactive My Music playback pill around your front camera cutout with cover art, live visualizer, and playback controls. My Music never reads other apps or screen content.</string>
+</resources>
+

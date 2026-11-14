@@ -27,7 +27,10 @@ import kotlinx.coroutines.delay
  val visibility=remember {MutableTransitionState(!completed)}
  val showing=visibility.currentState || visibility.targetState
  LaunchedEffect(Unit) {if(!completed) {delay(1400);visibility.targetState=false}}
- LaunchedEffect(showing) {if(!showing) completed=true}
+ LaunchedEffect(showing) {
+  my.music.island.DynamicIslandBus.setIntroVisible(showing)
+  if(!showing) completed=true
+ }
  BackHandler(showing) {visibility.targetState=false}
  Box(Modifier.fillMaxSize()) {
   Box(if(showing) Modifier.fillMaxSize().clearAndSetSemantics {} else Modifier.fillMaxSize()) {content()}

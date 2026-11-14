@@ -21,6 +21,7 @@ class PlayerViewModel(application: Application): AndroidViewModel(application) {
     val app=application as MusicApplication
     val repository=app.collections
     val collections=repository.state
+    val collectionsLoaded=repository.loaded
     val libraryState=app.library.state
     val connection=PlaybackConnection(app,viewModelScope)
     val playback=connection.state

@@ -14,7 +14,7 @@ This document preserves the decisions and requirements that were shared across t
 
 ### Library, queue, and playback
 
-- Library sections: Songs, Playlists, Folders, Albums, Artists, and the optional For you section.
+- Library sections: Songs, Playlists, Folders, Albums, Artists, and the optional For you section, with horizontal left/right swiping between sections synced to the top tab bar.
 - Folder, album, and artist views need sorting, multi-selection, and relevant group actions. Group menus include play, play next, add to queue, add to playlist, and hide when meaningful.
 - The playing queue must support direct drag-and-drop. One-step up/down arrow movement is insufficient. Preserve active-track identity and seek position while reordering.
 - Shuffle in queue and player options must create a new queue order. Global Play is ordered playback; selecting a specific song or mix retains the current shuffle preference.
@@ -56,12 +56,21 @@ This document preserves the decisions and requirements that were shared across t
 - Album/artist mixes derive from existing recommendation counts and currently visible media; they add no new tracking table.
 - Widgets use the app’s playback service. A bound home-screen widget and live timeline update were not verified on the emulator used for the last widget check.
 
-## Current status as of 2026-11-04
+## Dynamic Island (cutout playback hub)
 
-- `main` is at `e8f7410` and matched `origin/main` when checked; latest release tag is `v1.0.0`.
-- The widget visual refresh is on `main` after the release tag. It keeps app version `1.0.0`, code `2`.
-- Last recorded verification: 37 unit-test report results, all 30 emulator workflows passed in the final full run at release preparation, and the widget-specific RemoteViews geometry check passed afterward. See [verification](VERIFICATION.md); these are recorded results, not claims that a full suite was rerun today.
-- Widget selection previews were checked on an API 37 emulator. Direct widget pinning was unsupported by its launcher and the app displayed the long-press-home instructions.
+- Added an opt-in `'Dynamic Island'` playback hub around the front camera cutout (`island/` package), keeping `my.music` (`1.0.0`, version code `2`), `minSdk = 24`, and strict local-first/zero-network boundaries unchanged.
+- Primary mode (`True Cutout Hub`, API 28+): `DynamicIslandAccessibilityService` draws a `TYPE_ACCESSIBILITY_OVERLAY` window above the status bar around the portrait front camera cutout (`center`, `left`, or `right` placement) with collapsed circular album art + live visualizer bars and an expanded playback card (artwork, title, artist, equalizer bars, elapsed/`-remaining` seek bar, previous/play-pause/next). Cutout metrics use display-level `WindowMetrics` (API 30+) with non-negative coordinate normalization and geometry/view memoization so overlay relayouts stay anchored to the cutout without drifting. The service declares `android:canRetrieveWindowContent="false"` and never reads screen or notification content from other apps.
+- Background-only display & fallback chain (`DynamicIslandCapability.resolveRenderMode`):
+  - Dynamic Island overlays render only when My Music is in the background; whenever `MainActivity` is open in the foreground, all overlay windows are hidden (no in-app overlay pill).
+  1. `CUTOUT_ACCESSIBILITY`: API 28+ with Accessibility service enabled.
+  2. `OVERLAY_BELOW_STATUS_BAR`: API 26+ (excluding Android Go `isLowRamDevice` on API 29+) with `SYSTEM_ALERT_WINDOW` (`TYPE_APPLICATION_OVERLAY`) anchored just below the status bar.
+  3. Notification / lock-screen / home-screen widgets: used when overlay permissions are not granted, below API 26 (`minSdk` 24–25), or on Android Go devices where floating system overlays are restricted.
+- First-install & user control: `FirstInstallIslandCard` prompts only once (`dynamic_island_prompted`) after initial install. If the user declines or does not grant permission, `DynamicIslandDeclinedDialog` explains what Dynamic Island does and where to enable it later (`Settings → Dynamic Island`), leaving standard app behavior untouched. Users can enable, disable, toggle `Show while paused`, preview in-app, or calibrate cutout alignment/size (`offsetYDp` `-48..48`, `heightDeltaDp` `-10..20`) anytime in `Settings → Dynamic Island`.
+
+## Current status as of 2026-11-11
+
+- Features on `main` after the `v1.0.0` tag include the widget visual refresh, the opt-in background-only Dynamic Island cutout hub with reliable transport controls (previous/play-pause/next touch delivery & expanded height bounds), and horizontal swipe navigation across top Library tabs. Both keep app version `1.0.0`, code `2`.
+- Latest verification after final edit: all 49 unit tests across 14 suites and debug APK build (local `MusicPlayer.apk` updated, SHA-256 `639BF3BA6E1E587F8E5025056DB66F806F2E2588CEE6A6B44908C07B4C9ABCCF`) passed. See [verification](VERIFICATION.md).
 - Runtime coverage on API 24–36, physical audio devices, external headset behavior, actual widget pinning across launchers, audio output capture, and paired-device transfer remain unverified.
 - Distribution signing is owner-controlled. Debug APKs and unsigned release builds are generated artifacts and are not committed.
 

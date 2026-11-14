@@ -33,8 +33,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import my.music.R
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import my.music.PlayerViewModel
+import my.music.island.*
 import my.music.model.Track
 import my.music.model.TrackId
 import my.music.backup.BackupCodec
@@ -48,6 +52,7 @@ import org.json.JSONObject
 
 @Composable fun MusicPlayerApp(vm: PlayerViewModel) {
     val data by vm.collections.collectAsStateWithLifecycle()
+    val collectionsLoaded by vm.collectionsLoaded.collectAsStateWithLifecycle()
     val tracks by vm.tracks.collectAsStateWithLifecycle()
     val allTracks by vm.allTracks.collectAsStateWithLifecycle()
     val playback by vm.playback.collectAsStateWithLifecycle()
@@ -59,6 +64,7 @@ import org.json.JSONObject
     val scope=rememberCoroutineScope()
     val fileOps=remember {FileOperations(context)}
     val editFileTags=rememberTagEditor(vm)
+    var awaitingIslandSetup by rememberSaveable {mutableStateOf(false)}
     var libraryTab by rememberSaveable {mutableStateOf("Songs")}
     var route by rememberSaveable {mutableStateOf("library")}
     var groupKind by rememberSaveable {mutableStateOf("")};var groupKey by rememberSaveable {mutableStateOf("")};var groupTitle by rememberSaveable {mutableStateOf("")}
@@ -76,8 +82,26 @@ import org.json.JSONObject
     val current=allTracks.find {it.id.uri==currentUri} ?: playback.current?.let {item-> Track(TrackId(currentUri.orEmpty()),item.mediaMetadata.title?.toString() ?: "Audio file",item.mediaMetadata.artist?.toString() ?: "Unknown artist",item.mediaMetadata.albumTitle?.toString().orEmpty(),null,"",playback.duration,null,0,item.mediaMetadata.artworkUri?.toString())}
     val drawer=rememberDrawerState(DrawerValue.Closed)
     val snackbar=remember {SnackbarHostState()}
-    fun back() {if(route=="library") {groupKind=""} else route=if((route=="queue" || route=="playerThemes") && playback.current!=null) "player" else "library"}
+    fun back() {if(route=="library") {groupKind=""} else route=when {route=="dynamicIsland"->"settings";(route=="queue" || route=="playerThemes") && playback.current!=null->"player";else->"library"}}
     LaunchedEffect(navigation) {navigation?.let {route=it;vm.navigation.value=null}}
+    val lifecycle=LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val observer=LifecycleEventObserver {_,event->
+            if(event==Lifecycle.Event.ON_RESUME && awaitingIslandSetup) {
+                awaitingIslandSetup=false
+                val granted=DynamicIslandCapability.isAccessibilityEnabled(context) || DynamicIslandCapability.canDrawOverlays(context)
+                if(!granted) {
+                    vm.pref(IslandConfig.KEY_ENABLED,"false")
+                    dialog="islandDeclined"
+                } else {
+                    DynamicIslandBus.notifyRefresh()
+                    vm.message.value="Dynamic Island enabled"
+                }
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose {lifecycle.removeObserver(observer)}
+    }
     fun navigate(destination: String) {route=destination}
     BackHandler(drawer.isOpen || route!="library" || group!=null) {if(drawer.isOpen) scope.launch {drawer.close()} else back()}
     LaunchedEffect(message) {message?.let {snackbar.showSnackbar(it);vm.message.value=null}}
@@ -133,7 +157,7 @@ import org.json.JSONObject
         val playerTheme=PlayerThemes.find(data.pref("player_theme","Artwork"),data.pref(CustomThemes.KEY))
         val playerCover=rememberCover(if(route=="player" && playerTheme.coverColors) playingArtwork else null)
         val background=if(route=="player") playerCover?.let {listOf(Color(it.colors[0]),Color(it.colors[1]))} ?: listOf(Color(playerTheme.top),Color(playerTheme.bottom)) else gradient
-        ModalNavigationDrawer(drawerState=drawer,drawerContent={ModalDrawerSheet(drawerContainerColor=Ink,modifier=Modifier.width(300.dp)) {
+        ModalNavigationDrawer(drawerState=drawer,gesturesEnabled=drawer.isOpen || route!="library" || group!=null,drawerContent={ModalDrawerSheet(drawerContainerColor=Ink,modifier=Modifier.width(300.dp)) {
             Column(Modifier.verticalScroll(rememberScrollState()).statusBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal=24.dp,vertical=24.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                     Image(painterResource(R.drawable.brand_icon),"My Music logo",Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)))
@@ -147,10 +171,22 @@ import org.json.JSONObject
             Scaffold(containerColor=Color.Transparent,contentColor=Color.White,snackbarHost={SnackbarHost(snackbar)},modifier=Modifier.background(Brush.verticalGradient(background)).statusBarsPadding(),bottomBar={if(route!="player" && playback.current!=null) CompactPlayer(vm,playback,{route="player"},{route="queue"}) else Spacer(Modifier.navigationBarsPadding())}) {padding->
                 Box(Modifier.padding(padding).fillMaxSize()) {
                     when(route) {
-                        "library"->if(group?.kind=="playlist") PlaylistDetail(vm,group,allTracks,data,{groupKind=""},{actionTrack=it;dialog="track"},{dialog="rename"},{dialog="playlistSongs"}) else LibraryScreen(vm,tracks,data,library,playback,group,libraryTab,{libraryTab=it},{groupKind=""},{scope.launch {drawer.open()}},{next->if(next.kind=="settings") route="settings" else {groupKind=next.kind;groupKey=next.key;groupTitle=next.title}},{actionTrack=it;dialog="track"},{dialog="newPlaylist"},{playlistTracks=it;dialog="playlist"},{route="themes"},{permission.launch(vm.app.library.permission)},{pendingDelete=it;dialog="deleteGroup"})
+                        "library"->if(group?.kind=="playlist") PlaylistDetail(vm,group,allTracks,data,{groupKind=""},{actionTrack=it;dialog="track"},{dialog="rename"},{dialog="playlistSongs"}) else LibraryScreen(vm,tracks,data,library,playback,group,libraryTab,{libraryTab=it},{groupKind=""},{scope.launch {drawer.open()}},{next->if(next.kind=="settings") route="settings" else {groupKind=next.kind;groupKey=next.key;groupTitle=next.title}},{actionTrack=it;dialog="track"},{dialog="newPlaylist"},{playlistTracks=it;dialog="playlist"},{route="themes"},{permission.launch(vm.app.library.permission)},{pendingDelete=it;dialog="deleteGroup"},firstInstallIsland=if(collectionsLoaded && !data.flag(IslandConfig.KEY_PROMPTED)) { {
+                            FirstInstallIslandCard(
+                                onEnable={
+                                    vm.work {vm.repository.setPreferences(mapOf(IslandConfig.KEY_PROMPTED to "true",IslandConfig.KEY_ENABLED to "true"))}
+                                    dialog="islandGuide"
+                                },
+                                onDecline={
+                                    vm.work {vm.repository.setPreferences(mapOf(IslandConfig.KEY_PROMPTED to "true",IslandConfig.KEY_ENABLED to "false"))}
+                                    dialog="islandDeclined"
+                                },
+                            )
+                        } } else null)
                         "player"->MaterialTheme(colorScheme=MaterialTheme.colorScheme.copy(primary=Color(playerTheme.accent))) {FullPlayer(vm,playback,current,currentUri in data.favorites,data.lyrics[currentUri].orEmpty(),::back,{actionTrack=current;dialog="playerActions"},{route="queue"},{route="equalizer"},{dialog="timer"},{playlistTracks=listOfNotNull(current);dialog="playlist"},{dialog="lyrics"},{route="playerThemes"})}
                         "queue"->QueueScreen(vm,playback,::back)
                         "settings"->SettingsScreen(vm,data,::back,::navigate)
+                        "dynamicIsland"->DynamicIslandSettingsScreen(vm,data,playback,current,playingArtwork,::back)
                         "scan"->ScanScreen(vm,data,::back,{permission.launch(vm.app.library.permission)})
                         "hidden"->HiddenScreen(vm,data,allTracks,::back)
                         "themes","playerThemes"->ThemeScreen(vm,data,::back,route=="playerThemes")
@@ -197,6 +233,16 @@ import org.json.JSONObject
             "edit"->actionTrack?.let {track->MetadataDialog(track,{dialog=null}) {title,artist,album,writeFile->if(writeFile) editFileTags(track,TagChange(title,artist,album)) else vm.work {val json=JSONObject(data.overrides[track.id.uri] ?: "{}").put("title",title).put("artist",artist).put("album",album);vm.repository.setOverride(track.id.uri,json.toString())};dialog=null}}
             "delete"->actionTrack?.let {track->AlertDialog(onDismissRequest={dialog=null},title={Text("Delete from device?")},text={Text("The music file “${track.title}” will be permanently deleted. Android may ask for confirmation.")},confirmButton={TextButton(onClick={dialog=null;delete(listOf(track))}) {Text("Delete")}},dismissButton={TextButton(onClick={dialog=null}) {Text("Cancel")}})}
             "details"->actionTrack?.let {track->AlertDialog(onDismissRequest={dialog=null},title={Text("Song details")},text={Column(Modifier.verticalScroll(rememberScrollState())) {Text("${track.title}\n${track.artist}\n${track.album}\n${timeLabel(track.durationMs)}\n${track.mimeType.orEmpty()}\n\n${track.folder}\n${track.id.uri}")}},confirmButton={TextButton(onClick={dialog=null}) {Text("Done")}})}
+            "islandGuide"->DynamicIslandPermissionGuideDialog(
+                onOpenAccessibility={dialog=null;awaitingIslandSetup=true;DynamicIslandCapability.openAccessibilitySettings(context)},
+                onOpenOverlay={dialog=null;awaitingIslandSetup=true;DynamicIslandCapability.openOverlaySettings(context)},
+                onOpenAppInfo={dialog=null;awaitingIslandSetup=true;DynamicIslandCapability.openAppInfoSettings(context)},
+                onDecline={dialog="islandDeclined";vm.pref(IslandConfig.KEY_ENABLED,"false")},
+            )
+            "islandDeclined"->DynamicIslandDeclinedDialog(
+                onDismiss={dialog=null},
+                onOpenSettings={dialog=null;route="dynamicIsland"},
+            )
         }
         restore?.let {backup->AlertDialog(onDismissRequest={restore=null},title={Text("Restore backup?")},text={Text("Replace saved collections and preferences with ${backup.playlists.size} playlists, ${backup.favorites.size} favorites and ${backup.lyrics.size} lyrics entries? Source music files are preserved. Media from another device may need to be relinked.")},confirmButton={TextButton(onClick={vm.work {vm.repository.restore(backup);vm.message.value="Backup restored"};restore=null}) {Text("Restore")}},dismissButton={TextButton(onClick={restore=null}) {Text("Cancel")}})}
     }

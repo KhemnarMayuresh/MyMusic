@@ -27,7 +27,7 @@ import my.music.model.Track
  LaunchedEffect(groups) {selected=selected.intersect(groups.map {it.key}.toSet())}
  val chosen=GroupLibrary.selected(groups,selected)
  val noun=when(kind) {"folder"->"folder";"album"->"album";else->"artist"}
- Column {
+ Column(Modifier.fillMaxSize()) {
   Row(Modifier.fillMaxWidth().padding(start=20.dp,end=8.dp),verticalAlignment=Alignment.CenterVertically) {
    Text(if(selected.isEmpty()) "${groups.size} ${noun}s" else "${selected.size} selected",Modifier.weight(1f),color=Muted)
    Box {IconButton(onClick={sorting=true}) {Icon(Icons.Rounded.Sort,"Sort $noun"+"s")};DropdownMenu(sorting,{sorting=false}) {listOf("Name A–Z","Name Z–A","Song count","Newest").forEach {label->DropdownMenuItem(text={Text(label)},onClick={vm.pref("group_sort_$kind",label);sorting=false})}}}
@@ -40,7 +40,7 @@ import my.music.model.Track
    TextButton(onClick={onDelete(chosen);selected=emptySet()}) {Text("Delete")}
    TextButton(onClick={selected=emptySet()}) {Text("Cancel")}
   }
-  LazyColumn {items(groups,key={it.key}) {group->
+  LazyColumn(Modifier.weight(1f).fillMaxWidth()) {items(groups,key={it.key}) {group->
    var menu by remember {mutableStateOf(false)}
    Row(Modifier.fillMaxWidth().combinedClickable(onClick={if(selected.isEmpty()) onGroup(BrowserGroup(kind,group.key,group.title)) else selected=if(group.key in selected) selected-group.key else selected+group.key},onLongClick={selected=selected+group.key}).padding(start=16.dp,top=12.dp,bottom=12.dp),verticalAlignment=Alignment.CenterVertically) {
     if(group.key in selected) Icon(Icons.Rounded.CheckCircle,null,Modifier.size(52.dp),tint=MaterialTheme.colorScheme.primary)
